@@ -13,13 +13,21 @@ A minimal, modern invoice generator built with React and TypeScript. Create prof
 - **Multiple Export Options** - Download as PDF, PNG image, or print directly
 - **Share Instantly** - Send via email or WhatsApp with pre-filled message
 - **Saved Clients** - Auto-save client info for quick reuse
-- **Invoice Templates** - Save common invoice configurations for reuse
+- **Invoice Templates** - Save full invoice configurations for reuse
 - **Terms Templates** - Reusable payment terms and notes
-- **Recurring Invoices** - Schedule invoices to repeat (weekly/monthly/quarterly)
 - **Custom Branding** - Add your logo and choose accent colors
 - **QR Code** - Optional QR code for payment details
 - **Dark Mode** - Light and dark theme support
+- **Keyboard Shortcuts** - Quick actions for power users
 - **Offline Ready** - All data stored locally in browser
+
+## Keyboard Shortcuts
+
+| Action | Mac | Windows/Linux |
+|--------|-----|---------------|
+| Save Invoice | ⌘+S | Ctrl+S |
+| Download PDF | ⌘+P | Ctrl+P |
+| New Invoice | ⌘+N | Ctrl+N |
 
 ## Tech Stack
 
@@ -63,7 +71,6 @@ All data is stored in your browser's localStorage:
 - Saved clients
 - Invoice templates
 - Terms templates
-- Recurring invoices
 - Settings and preferences
 
 Export your data anytime from **Settings > Data > Export**.

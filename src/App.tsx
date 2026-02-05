@@ -24,6 +24,10 @@ import {
   deleteClient,
   saveLineItemTemplate,
   deleteLineItemTemplate,
+  saveInvoiceTemplate,
+  deleteInvoiceTemplate,
+  saveTermsTemplate,
+  deleteTermsTemplate,
   updateSettings,
   exportDataAsJson,
   importDataFromJson,
@@ -52,6 +56,35 @@ function App() {
     document.documentElement.classList.toggle('dark', isDark);
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
   }, [isDark]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const modifier = e.metaKey || e.ctrlKey;
+
+      if (!modifier) return;
+
+      switch (e.key.toLowerCase()) {
+        case 's':
+          e.preventDefault();
+          handleSaveInvoice();
+          break;
+        case 'p':
+          if (view === 'editor') {
+            e.preventDefault();
+            downloadPdf();
+          }
+          break;
+        case 'n':
+          e.preventDefault();
+          handleNewInvoice();
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  });
 
   const handleInvoiceChange = (invoice: InvoiceData) => {
     const updated = { ...invoice, updatedAt: new Date().toISOString() };
@@ -483,6 +516,8 @@ function App() {
               settings={appData.settings}
               clients={appData.clients}
               lineItemTemplates={appData.lineItemTemplates}
+              invoiceTemplates={appData.invoiceTemplates}
+              termsTemplates={appData.termsTemplates}
               onSettingsChange={(settings) => {
                 const newData = updateSettings(appData, settings);
                 setAppData(newData);
@@ -501,6 +536,22 @@ function App() {
               }}
               onDeleteLineItemTemplate={(templateId) => {
                 const newData = deleteLineItemTemplate(appData, templateId);
+                setAppData(newData);
+              }}
+              onSaveInvoiceTemplate={(template) => {
+                const newData = saveInvoiceTemplate(appData, template);
+                setAppData(newData);
+              }}
+              onDeleteInvoiceTemplate={(templateId) => {
+                const newData = deleteInvoiceTemplate(appData, templateId);
+                setAppData(newData);
+              }}
+              onSaveTermsTemplate={(template) => {
+                const newData = saveTermsTemplate(appData, template);
+                setAppData(newData);
+              }}
+              onDeleteTermsTemplate={(templateId) => {
+                const newData = deleteTermsTemplate(appData, templateId);
                 setAppData(newData);
               }}
               onExportData={handleExportData}

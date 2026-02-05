@@ -1,17 +1,23 @@
 import { useRef, useState } from 'react';
-import type { AppSettings, SavedClient, SavedLineItem } from '../types';
-import { ACCENT_COLORS, DUE_DATE_PRESETS } from '../types';
+import type { AppSettings, SavedClient, SavedLineItem, InvoiceTemplate, TermsTemplate } from '../types';
+import { ACCENT_COLORS, DUE_DATE_PRESETS, CURRENCIES } from '../types';
 import { Modal, ConfirmModal } from './Modal';
 
 interface SettingsProps {
   settings: AppSettings;
   clients: SavedClient[];
   lineItemTemplates: SavedLineItem[];
+  invoiceTemplates: InvoiceTemplate[];
+  termsTemplates: TermsTemplate[];
   onSettingsChange: (settings: Partial<AppSettings>) => void;
   onSaveClient: (client: SavedClient) => void;
   onDeleteClient: (clientId: string) => void;
   onSaveLineItemTemplate: (template: SavedLineItem) => void;
   onDeleteLineItemTemplate: (templateId: string) => void;
+  onSaveInvoiceTemplate: (template: InvoiceTemplate) => void;
+  onDeleteInvoiceTemplate: (templateId: string) => void;
+  onSaveTermsTemplate: (template: TermsTemplate) => void;
+  onDeleteTermsTemplate: (templateId: string) => void;
   onExportData: () => void;
   onImportData: (data: string) => void;
 }
@@ -20,11 +26,17 @@ export function Settings({
   settings,
   clients,
   lineItemTemplates,
+  invoiceTemplates,
+  termsTemplates,
   onSettingsChange,
   onSaveClient,
   onDeleteClient,
   onSaveLineItemTemplate,
   onDeleteLineItemTemplate,
+  onSaveInvoiceTemplate,
+  onDeleteInvoiceTemplate,
+  onSaveTermsTemplate,
+  onDeleteTermsTemplate,
   onExportData,
   onImportData,
 }: SettingsProps) {
@@ -34,14 +46,25 @@ export function Settings({
   // Modal states
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+  const [isInvoiceTemplateModalOpen, setIsInvoiceTemplateModalOpen] = useState(false);
+  const [isTermsTemplateModalOpen, setIsTermsTemplateModalOpen] = useState(false);
   const [isImportConfirmOpen, setIsImportConfirmOpen] = useState(false);
   const [deleteClientId, setDeleteClientId] = useState<string | null>(null);
   const [deleteTemplateId, setDeleteTemplateId] = useState<string | null>(null);
+  const [deleteInvoiceTemplateId, setDeleteInvoiceTemplateId] = useState<string | null>(null);
+  const [deleteTermsTemplateId, setDeleteTermsTemplateId] = useState<string | null>(null);
   const [pendingImportData, setPendingImportData] = useState<string | null>(null);
 
   // Form states
   const [clientForm, setClientForm] = useState({ name: '', email: '', address: '' });
   const [templateForm, setTemplateForm] = useState({ description: '', rate: '' });
+  const [invoiceTemplateForm, setInvoiceTemplateForm] = useState({
+    name: '',
+    lineItems: [{ description: '', quantity: 1, rate: 0 }],
+    notes: '',
+    currency: 'USD',
+  });
+  const [termsTemplateForm, setTermsTemplateForm] = useState({ name: '', content: '' });
 
   const inputClass =
     'w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900 dark:focus:ring-white transition-all duration-200';
@@ -112,6 +135,63 @@ export function Settings({
 
     setTemplateForm({ description: '', rate: '' });
     setIsTemplateModalOpen(false);
+  };
+
+  const handleSaveInvoiceTemplate = () => {
+    if (!invoiceTemplateForm.name.trim()) return;
+
+    onSaveInvoiceTemplate({
+      id: crypto.randomUUID(),
+      name: invoiceTemplateForm.name.trim(),
+      lineItems: invoiceTemplateForm.lineItems.filter(item => item.description.trim()),
+      notes: invoiceTemplateForm.notes.trim(),
+      currency: invoiceTemplateForm.currency,
+    });
+
+    setInvoiceTemplateForm({
+      name: '',
+      lineItems: [{ description: '', quantity: 1, rate: 0 }],
+      notes: '',
+      currency: 'USD',
+    });
+    setIsInvoiceTemplateModalOpen(false);
+  };
+
+  const handleSaveTermsTemplate = () => {
+    if (!termsTemplateForm.name.trim() || !termsTemplateForm.content.trim()) return;
+
+    onSaveTermsTemplate({
+      id: crypto.randomUUID(),
+      name: termsTemplateForm.name.trim(),
+      content: termsTemplateForm.content.trim(),
+    });
+
+    setTermsTemplateForm({ name: '', content: '' });
+    setIsTermsTemplateModalOpen(false);
+  };
+
+  const addInvoiceTemplateLineItem = () => {
+    setInvoiceTemplateForm({
+      ...invoiceTemplateForm,
+      lineItems: [...invoiceTemplateForm.lineItems, { description: '', quantity: 1, rate: 0 }],
+    });
+  };
+
+  const removeInvoiceTemplateLineItem = (index: number) => {
+    if (invoiceTemplateForm.lineItems.length <= 1) return;
+    setInvoiceTemplateForm({
+      ...invoiceTemplateForm,
+      lineItems: invoiceTemplateForm.lineItems.filter((_, i) => i !== index),
+    });
+  };
+
+  const updateInvoiceTemplateLineItem = (index: number, field: string, value: string | number) => {
+    setInvoiceTemplateForm({
+      ...invoiceTemplateForm,
+      lineItems: invoiceTemplateForm.lineItems.map((item, i) =>
+        i === index ? { ...item, [field]: value } : item
+      ),
+    });
   };
 
   return (
@@ -394,6 +474,106 @@ export function Settings({
           )}
         </section>
 
+        {/* Invoice Templates */}
+        <section className="p-5 bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-800">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-sm font-medium text-neutral-900 dark:text-white">Invoice Templates</h3>
+              <p className="text-xs text-neutral-400 mt-0.5">Save full invoice configurations</p>
+            </div>
+            <button
+              onClick={() => setIsInvoiceTemplateModalOpen(true)}
+              className="px-3 py-1.5 text-sm bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-lg hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors"
+            >
+              + Add
+            </button>
+          </div>
+
+          {invoiceTemplates.length === 0 ? (
+            <div className="py-8 text-center">
+              <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+                <svg className="w-5 h-5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <p className="text-sm text-neutral-400">No invoice templates</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {invoiceTemplates.map((template) => (
+                <div
+                  key={template.id}
+                  className="flex items-center justify-between p-3 bg-neutral-50 dark:bg-neutral-800 rounded-lg group"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-medium text-neutral-900 dark:text-white truncate">{template.name}</div>
+                    <div className="text-xs text-neutral-500">
+                      {template.lineItems.length} item{template.lineItems.length !== 1 ? 's' : ''} · {template.currency}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setDeleteInvoiceTemplateId(template.id)}
+                    className="p-1.5 text-neutral-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Terms Templates */}
+        <section className="p-5 bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-800">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-sm font-medium text-neutral-900 dark:text-white">Terms & Notes Templates</h3>
+              <p className="text-xs text-neutral-400 mt-0.5">Reusable payment terms and notes</p>
+            </div>
+            <button
+              onClick={() => setIsTermsTemplateModalOpen(true)}
+              className="px-3 py-1.5 text-sm bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-lg hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors"
+            >
+              + Add
+            </button>
+          </div>
+
+          {termsTemplates.length === 0 ? (
+            <div className="py-8 text-center">
+              <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+                <svg className="w-5 h-5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <p className="text-sm text-neutral-400">No terms templates</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {termsTemplates.map((template) => (
+                <div
+                  key={template.id}
+                  className="flex items-center justify-between p-3 bg-neutral-50 dark:bg-neutral-800 rounded-lg group"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-medium text-neutral-900 dark:text-white truncate">{template.name}</div>
+                    <div className="text-xs text-neutral-500 truncate">{template.content.substring(0, 50)}...</div>
+                  </div>
+                  <button
+                    onClick={() => setDeleteTermsTemplateId(template.id)}
+                    className="p-1.5 text-neutral-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
         {/* Data Management */}
         <section className="p-5 bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-800">
           <h3 className="text-sm font-medium text-neutral-900 dark:text-white mb-1">Data</h3>
@@ -604,6 +784,232 @@ export function Settings({
         title="Import Data"
         message="This will replace all existing invoices, clients, and settings. Are you sure you want to continue?"
         confirmText="Import"
+      />
+
+      {/* Add Invoice Template Modal */}
+      <Modal
+        isOpen={isInvoiceTemplateModalOpen}
+        onClose={() => {
+          setIsInvoiceTemplateModalOpen(false);
+          setInvoiceTemplateForm({
+            name: '',
+            lineItems: [{ description: '', quantity: 1, rate: 0 }],
+            notes: '',
+            currency: 'USD',
+          });
+        }}
+        title="Add Invoice Template"
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSaveInvoiceTemplate();
+          }}
+        >
+          <div className="space-y-4">
+            <div>
+              <label className={labelClass}>Template Name *</label>
+              <input
+                type="text"
+                className={inputClass}
+                value={invoiceTemplateForm.name}
+                onChange={(e) => setInvoiceTemplateForm({ ...invoiceTemplateForm, name: e.target.value })}
+                placeholder="e.g., Web Development, Consulting"
+                autoFocus
+              />
+            </div>
+
+            <div>
+              <label className={labelClass}>Currency</label>
+              <select
+                className={inputClass}
+                value={invoiceTemplateForm.currency}
+                onChange={(e) => setInvoiceTemplateForm({ ...invoiceTemplateForm, currency: e.target.value })}
+              >
+                {CURRENCIES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.code} - {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className={labelClass + ' mb-0'}>Line Items</label>
+                <button
+                  type="button"
+                  onClick={addInvoiceTemplateLineItem}
+                  className="text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
+                >
+                  + Add Item
+                </button>
+              </div>
+              <div className="space-y-2">
+                {invoiceTemplateForm.lineItems.map((item, index) => (
+                  <div key={index} className="flex gap-2 items-start">
+                    <input
+                      type="text"
+                      className={inputClass + ' flex-1'}
+                      value={item.description}
+                      onChange={(e) => updateInvoiceTemplateLineItem(index, 'description', e.target.value)}
+                      placeholder="Description"
+                    />
+                    <input
+                      type="number"
+                      className={inputClass + ' w-16'}
+                      value={item.quantity}
+                      onChange={(e) => updateInvoiceTemplateLineItem(index, 'quantity', parseInt(e.target.value) || 1)}
+                      min="1"
+                    />
+                    <input
+                      type="number"
+                      className={inputClass + ' w-24'}
+                      value={item.rate}
+                      onChange={(e) => updateInvoiceTemplateLineItem(index, 'rate', parseFloat(e.target.value) || 0)}
+                      placeholder="Rate"
+                      step="0.01"
+                    />
+                    {invoiceTemplateForm.lineItems.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeInvoiceTemplateLineItem(index)}
+                        className="p-2 text-neutral-400 hover:text-red-500"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className={labelClass}>Default Notes</label>
+              <textarea
+                className={inputClass + ' min-h-[80px]'}
+                value={invoiceTemplateForm.notes}
+                onChange={(e) => setInvoiceTemplateForm({ ...invoiceTemplateForm, notes: e.target.value })}
+                placeholder="Payment terms, thank you message, etc."
+              />
+            </div>
+          </div>
+          <div className="flex gap-2 justify-end mt-5">
+            <button
+              type="button"
+              onClick={() => {
+                setIsInvoiceTemplateModalOpen(false);
+                setInvoiceTemplateForm({
+                  name: '',
+                  lineItems: [{ description: '', quantity: 1, rate: 0 }],
+                  notes: '',
+                  currency: 'USD',
+                });
+              }}
+              className="px-4 py-2 text-sm border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!invoiceTemplateForm.name.trim()}
+              className="px-4 py-2 text-sm bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-lg hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors disabled:opacity-50"
+            >
+              Save Template
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Add Terms Template Modal */}
+      <Modal
+        isOpen={isTermsTemplateModalOpen}
+        onClose={() => {
+          setIsTermsTemplateModalOpen(false);
+          setTermsTemplateForm({ name: '', content: '' });
+        }}
+        title="Add Terms Template"
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSaveTermsTemplate();
+          }}
+        >
+          <div className="space-y-4">
+            <div>
+              <label className={labelClass}>Template Name *</label>
+              <input
+                type="text"
+                className={inputClass}
+                value={termsTemplateForm.name}
+                onChange={(e) => setTermsTemplateForm({ ...termsTemplateForm, name: e.target.value })}
+                placeholder="e.g., Standard Terms, Net 30"
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Content *</label>
+              <textarea
+                className={inputClass + ' min-h-[120px]'}
+                value={termsTemplateForm.content}
+                onChange={(e) => setTermsTemplateForm({ ...termsTemplateForm, content: e.target.value })}
+                placeholder="Payment is due within 30 days of invoice date..."
+              />
+            </div>
+          </div>
+          <div className="flex gap-2 justify-end mt-5">
+            <button
+              type="button"
+              onClick={() => {
+                setIsTermsTemplateModalOpen(false);
+                setTermsTemplateForm({ name: '', content: '' });
+              }}
+              className="px-4 py-2 text-sm border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!termsTemplateForm.name.trim() || !termsTemplateForm.content.trim()}
+              className="px-4 py-2 text-sm bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-lg hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors disabled:opacity-50"
+            >
+              Save Template
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Delete Invoice Template Confirmation */}
+      <ConfirmModal
+        isOpen={!!deleteInvoiceTemplateId}
+        onClose={() => setDeleteInvoiceTemplateId(null)}
+        onConfirm={() => {
+          if (deleteInvoiceTemplateId) {
+            onDeleteInvoiceTemplate(deleteInvoiceTemplateId);
+          }
+        }}
+        title="Delete Invoice Template"
+        message="Are you sure you want to delete this invoice template? This action cannot be undone."
+        confirmText="Delete"
+        confirmVariant="danger"
+      />
+
+      {/* Delete Terms Template Confirmation */}
+      <ConfirmModal
+        isOpen={!!deleteTermsTemplateId}
+        onClose={() => setDeleteTermsTemplateId(null)}
+        onConfirm={() => {
+          if (deleteTermsTemplateId) {
+            onDeleteTermsTemplate(deleteTermsTemplateId);
+          }
+        }}
+        title="Delete Terms Template"
+        message="Are you sure you want to delete this terms template? This action cannot be undone."
+        confirmText="Delete"
+        confirmVariant="danger"
       />
     </>
   );
