@@ -1,4 +1,4 @@
-# Invogen
+# Invoiceberg
 
 A minimal, modern invoice generator built with React and TypeScript. Create professional invoices, export to PDF/image, and share via email or WhatsApp.
 
@@ -13,6 +13,9 @@ A minimal, modern invoice generator built with React and TypeScript. Create prof
 - **Multiple Export Options** - Download as PDF, PNG image, or print directly
 - **Share Instantly** - Send via email or WhatsApp with pre-filled message
 - **Saved Clients** - Auto-save client info for quick reuse
+- **Invoice Templates** - Save common invoice configurations for reuse
+- **Terms Templates** - Reusable payment terms and notes
+- **Recurring Invoices** - Schedule invoices to repeat (weekly/monthly/quarterly)
 - **Custom Branding** - Add your logo and choose accent colors
 - **QR Code** - Optional QR code for payment details
 - **Dark Mode** - Light and dark theme support
@@ -32,8 +35,8 @@ A minimal, modern invoice generator built with React and TypeScript. Create prof
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/invogen.git
-cd invogen
+git clone https://github.com/janmaaarc/invoice-generator.git
+cd invoice-generator
 
 # Install dependencies
 npm install
@@ -53,23 +56,14 @@ npm run build
 4. Preview your invoice in real-time
 5. Export as PDF, image, or share directly
 
-## Screenshots
-
-### Editor View
-Create and edit invoices with live preview
-
-### Invoice Preview
-Professional invoice layout with customizable branding
-
-### Settings
-Configure defaults, saved clients, and branding options
-
 ## Data Storage
 
 All data is stored in your browser's localStorage:
 - Invoices and history
 - Saved clients
-- Item templates
+- Invoice templates
+- Terms templates
+- Recurring invoices
 - Settings and preferences
 
 Export your data anytime from **Settings > Data > Export**.

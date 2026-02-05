@@ -34,5 +34,19 @@
   body {
     background: white !important;
     padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  #invoice-preview {
+    background: white !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  #invoice-preview * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
   }
 }

@@ -1,4 +1,4 @@
-import type { AppData, InvoiceData, SavedClient, SavedLineItem, AppSettings } from './types';
+import type { AppData, InvoiceData, SavedClient, SavedLineItem, AppSettings, InvoiceTemplate, TermsTemplate, RecurringInvoice } from './types';
 import { DEFAULT_SETTINGS } from './types';
 
 const STORAGE_KEY = 'invoice-generator-data';
@@ -8,6 +8,9 @@ function getDefaultAppData(): AppData {
     invoices: [],
     clients: [],
     lineItemTemplates: [],
+    invoiceTemplates: [],
+    termsTemplates: [],
+    recurringInvoices: [],
     settings: DEFAULT_SETTINGS,
   };
 }
@@ -25,6 +28,9 @@ export function loadAppData(): AppData {
       invoices: parsed.invoices || [],
       clients: parsed.clients || [],
       lineItemTemplates: parsed.lineItemTemplates || [],
+      invoiceTemplates: parsed.invoiceTemplates || [],
+      termsTemplates: parsed.termsTemplates || [],
+      recurringInvoices: parsed.recurringInvoices || [],
       settings: { ...DEFAULT_SETTINGS, ...parsed.settings },
     };
   } catch {
@@ -153,6 +159,72 @@ export function updateSettings(data: AppData, settings: Partial<AppSettings>): A
   return newData;
 }
 
+export function saveInvoiceTemplate(data: AppData, template: InvoiceTemplate): AppData {
+  const existingIndex = data.invoiceTemplates.findIndex(t => t.id === template.id);
+
+  const invoiceTemplates = existingIndex >= 0
+    ? data.invoiceTemplates.map((t, i) => i === existingIndex ? template : t)
+    : [...data.invoiceTemplates, template];
+
+  const newData = { ...data, invoiceTemplates };
+  saveAppData(newData);
+  return newData;
+}
+
+export function deleteInvoiceTemplate(data: AppData, templateId: string): AppData {
+  const newData = {
+    ...data,
+    invoiceTemplates: data.invoiceTemplates.filter(t => t.id !== templateId),
+  };
+
+  saveAppData(newData);
+  return newData;
+}
+
+export function saveTermsTemplate(data: AppData, template: TermsTemplate): AppData {
+  const existingIndex = data.termsTemplates.findIndex(t => t.id === template.id);
+
+  const termsTemplates = existingIndex >= 0
+    ? data.termsTemplates.map((t, i) => i === existingIndex ? template : t)
+    : [...data.termsTemplates, template];
+
+  const newData = { ...data, termsTemplates };
+  saveAppData(newData);
+  return newData;
+}
+
+export function deleteTermsTemplate(data: AppData, templateId: string): AppData {
+  const newData = {
+    ...data,
+    termsTemplates: data.termsTemplates.filter(t => t.id !== templateId),
+  };
+
+  saveAppData(newData);
+  return newData;
+}
+
+export function saveRecurringInvoice(data: AppData, recurring: RecurringInvoice): AppData {
+  const existingIndex = data.recurringInvoices.findIndex(r => r.id === recurring.id);
+
+  const recurringInvoices = existingIndex >= 0
+    ? data.recurringInvoices.map((r, i) => i === existingIndex ? recurring : r)
+    : [...data.recurringInvoices, recurring];
+
+  const newData = { ...data, recurringInvoices };
+  saveAppData(newData);
+  return newData;
+}
+
+export function deleteRecurringInvoice(data: AppData, recurringId: string): AppData {
+  const newData = {
+    ...data,
+    recurringInvoices: data.recurringInvoices.filter(r => r.id !== recurringId),
+  };
+
+  saveAppData(newData);
+  return newData;
+}
+
 export function exportDataAsJson(data: AppData): string {
   return JSON.stringify(data, null, 2);
 }
@@ -169,6 +241,9 @@ export function importDataFromJson(jsonString: string): AppData | null {
       invoices: parsed.invoices || [],
       clients: parsed.clients || [],
       lineItemTemplates: parsed.lineItemTemplates || [],
+      invoiceTemplates: parsed.invoiceTemplates || [],
+      termsTemplates: parsed.termsTemplates || [],
+      recurringInvoices: parsed.recurringInvoices || [],
       settings: { ...DEFAULT_SETTINGS, ...parsed.settings },
     };
   } catch {

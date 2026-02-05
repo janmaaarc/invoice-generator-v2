@@ -47,6 +47,31 @@ export interface SavedLineItem {
   rate: number;
 }
 
+export interface InvoiceTemplate {
+  id: string;
+  name: string;
+  lineItems: Omit<LineItem, 'id'>[];
+  notes: string;
+  currency: string;
+}
+
+export interface TermsTemplate {
+  id: string;
+  name: string;
+  content: string;
+}
+
+export type RecurringFrequency = 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly';
+
+export interface RecurringInvoice {
+  id: string;
+  templateId: string;
+  clientId: string;
+  frequency: RecurringFrequency;
+  nextDate: string;
+  enabled: boolean;
+}
+
 export interface AppSettings {
   logo?: string;
   accentColor: string;
@@ -66,6 +91,9 @@ export interface AppData {
   invoices: InvoiceData[];
   clients: SavedClient[];
   lineItemTemplates: SavedLineItem[];
+  invoiceTemplates: InvoiceTemplate[];
+  termsTemplates: TermsTemplate[];
+  recurringInvoices: RecurringInvoice[];
   settings: AppSettings;
 }
 
