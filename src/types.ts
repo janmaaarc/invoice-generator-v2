@@ -25,6 +25,7 @@ export interface InvoiceData {
 
   paymentMethod: string;
   paymentDetails: string;
+  paymentQrImage?: string;
   notes: string;
   currency: string;
 

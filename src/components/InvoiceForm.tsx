@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { CURRENCIES, DUE_DATE_PRESETS, calculateDueDate } from '../types';
 import type { InvoiceData, LineItem, SavedClient } from '../types';
 
@@ -111,6 +111,26 @@ export function InvoiceForm({ invoice, onChange, clients = [] }: InvoiceFormProp
   const isPaymentLinkMethod = (method: string): boolean => {
     const lower = method.toLowerCase().trim();
     return ['paypal', 'wise', 'venmo', 'cash app', 'cashapp'].some(m => lower.includes(m));
+  };
+
+  const qrInputRef = useRef<HTMLInputElement>(null);
+
+  const handleQrUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 500000) {
+      alert('QR code image must be less than 500KB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      onChange({ ...invoice, paymentQrImage: result });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
   };
 
   const inputClass =
@@ -514,12 +534,63 @@ export function InvoiceForm({ invoice, onChange, clients = [] }: InvoiceFormProp
               value={invoice.paymentDetails}
               onChange={(e) => updateField('paymentDetails', e.target.value)}
             />
-            {isPaymentLinkMethod(invoice.paymentMethod) && (
+            {isPaymentLinkMethod(invoice.paymentMethod) && !invoice.paymentQrImage && (
               <p className="text-xs text-neutral-400 mt-1">
                 Paste a payment link to auto-generate a QR code
               </p>
             )}
           </div>
+        </div>
+
+        {/* QR Code Upload */}
+        <div className="mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-800">
+          <label className={labelClass}>Payment QR Code</label>
+          <div className="flex items-center gap-4">
+            {invoice.paymentQrImage ? (
+              <div className="relative group">
+                <img
+                  src={invoice.paymentQrImage}
+                  alt="Payment QR"
+                  className="w-20 h-20 object-contain rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white"
+                />
+                <button
+                  type="button"
+                  onClick={() => onChange({ ...invoice, paymentQrImage: undefined })}
+                  className="absolute -top-2 -right-2 w-5 h-5 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
+                >
+                  ×
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => qrInputRef.current?.click()}
+                className="w-20 h-20 border-2 border-dashed border-neutral-300 dark:border-neutral-700 rounded-lg flex flex-col items-center justify-center text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-600 hover:text-neutral-500 transition-colors gap-1"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span className="text-[10px]">Upload</span>
+              </button>
+            )}
+            {invoice.paymentQrImage && (
+              <button
+                type="button"
+                onClick={() => qrInputRef.current?.click()}
+                className="text-sm text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
+              >
+                Change
+              </button>
+            )}
+            <input
+              ref={qrInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleQrUpload}
+            />
+          </div>
+          <p className="text-xs text-neutral-400 mt-2">Upload your payment QR code (PNG/JPG, max 500KB)</p>
         </div>
       </section>
 

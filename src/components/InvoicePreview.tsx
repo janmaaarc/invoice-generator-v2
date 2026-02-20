@@ -208,7 +208,15 @@ export const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(
                 )}
               </div>
             </div>
-            {shouldShowQr && (
+            {invoice.paymentQrImage ? (
+              <div style={{ marginLeft: 24, flexShrink: 0 }}>
+                <img
+                  src={invoice.paymentQrImage}
+                  alt="Payment QR"
+                  style={{ width: 80, height: 80, objectFit: 'contain' }}
+                />
+              </div>
+            ) : shouldShowQr ? (
               <div style={{ marginLeft: 24, flexShrink: 0 }}>
                 <QRCodeSVG
                   value={paymentUrl || invoice.paymentDetails}
@@ -218,7 +226,7 @@ export const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(
                   fgColor="#171717"
                 />
               </div>
-            )}
+            ) : null}
           </div>
         )}
 
