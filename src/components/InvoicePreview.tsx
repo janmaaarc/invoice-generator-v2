@@ -42,6 +42,24 @@ export const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(
 
     const status = statusColors[invoice.status] || statusColors.draft;
 
+    const isPaymentUrl = (str: string): boolean => {
+      if (!str) return false;
+      const trimmed = str.trim();
+      if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return true;
+      return /^(paypal\.me|wise\.com|venmo\.com|cash\.app)\//i.test(trimmed);
+    };
+
+    const getFullUrl = (str: string): string => {
+      const trimmed = str.trim();
+      if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
+      return `https://${trimmed}`;
+    };
+
+    const paymentUrl = invoice.paymentDetails && isPaymentUrl(invoice.paymentDetails)
+      ? getFullUrl(invoice.paymentDetails)
+      : null;
+    const shouldShowQr = (showQrCode || paymentUrl) && invoice.paymentDetails;
+
     return (
       <div
         ref={ref}
@@ -172,13 +190,28 @@ export const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(
                 {invoice.paymentMethod && (
                   <div style={{ fontWeight: 500, color: '#171717' }}>{invoice.paymentMethod}</div>
                 )}
-                {invoice.paymentDetails && <div>{invoice.paymentDetails}</div>}
+                {invoice.paymentDetails && (
+                  paymentUrl ? (
+                    <div>
+                      <a
+                        href={paymentUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: accentColor, textDecoration: 'underline', wordBreak: 'break-all' }}
+                      >
+                        {invoice.paymentDetails}
+                      </a>
+                    </div>
+                  ) : (
+                    <div>{invoice.paymentDetails}</div>
+                  )
+                )}
               </div>
             </div>
-            {showQrCode && invoice.paymentDetails && (
-              <div style={{ marginLeft: 24 }}>
+            {shouldShowQr && (
+              <div style={{ marginLeft: 24, flexShrink: 0 }}>
                 <QRCodeSVG
-                  value={invoice.paymentDetails}
+                  value={paymentUrl || invoice.paymentDetails}
                   size={80}
                   level="M"
                   bgColor="#fafafa"

@@ -98,6 +98,21 @@ export function InvoiceForm({ invoice, onChange, clients = [] }: InvoiceFormProp
     });
   };
 
+  const getPaymentPlaceholder = (method: string): string => {
+    const lower = method.toLowerCase().trim();
+    if (lower.includes('paypal')) return 'paypal.me/username';
+    if (lower.includes('wise')) return 'wise.com/pay/...';
+    if (lower.includes('venmo')) return 'venmo.com/username';
+    if (lower.includes('cash app') || lower.includes('cashapp')) return '$cashtag';
+    if (lower.includes('bank') || lower.includes('wire')) return 'IBAN or account number';
+    return 'Account, email, or payment link';
+  };
+
+  const isPaymentLinkMethod = (method: string): boolean => {
+    const lower = method.toLowerCase().trim();
+    return ['paypal', 'wise', 'venmo', 'cash app', 'cashapp'].some(m => lower.includes(m));
+  };
+
   const inputClass =
     'w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-900 dark:focus:ring-white focus:border-transparent transition-all duration-200';
   const labelClass = 'block text-sm text-neutral-500 dark:text-neutral-400 mb-1.5';
@@ -495,10 +510,15 @@ export function InvoiceForm({ invoice, onChange, clients = [] }: InvoiceFormProp
             <input
               type="text"
               className={inputClass}
-              placeholder="Account or email"
+              placeholder={getPaymentPlaceholder(invoice.paymentMethod)}
               value={invoice.paymentDetails}
               onChange={(e) => updateField('paymentDetails', e.target.value)}
             />
+            {isPaymentLinkMethod(invoice.paymentMethod) && (
+              <p className="text-xs text-neutral-400 mt-1">
+                Paste a payment link to auto-generate a QR code
+              </p>
+            )}
           </div>
         </div>
       </section>
