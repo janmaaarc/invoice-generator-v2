@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { CURRENCIES, DUE_DATE_PRESETS, calculateDueDate } from '../types';
 import type { InvoiceData, LineItem, SavedClient } from '../types';
 
@@ -72,6 +73,30 @@ export function InvoiceForm({ invoice, onChange, clients = [] }: InvoiceFormProp
 
   const formatCurrency = (amount: number) =>
     `${currency.symbol}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  const [editingRates, setEditingRates] = useState<Record<string, string>>({});
+
+  const getRateValue = (itemId: string, rate: number) =>
+    itemId in editingRates ? editingRates[itemId] : (rate === 0 ? '' : rate);
+
+  const handleRateFocus = (itemId: string, rate: number) => {
+    setEditingRates(prev => ({ ...prev, [itemId]: rate === 0 ? '' : String(rate) }));
+  };
+
+  const handleRateChange = (itemId: string, rawValue: string) => {
+    const val = rawValue.replace(/[^0-9.]/g, '');
+    setEditingRates(prev => ({ ...prev, [itemId]: val }));
+    const parsed = parseFloat(val);
+    updateLineItem(itemId, { rate: !isNaN(parsed) ? parsed : 0 });
+  };
+
+  const handleRateBlur = (itemId: string) => {
+    setEditingRates(prev => {
+      const next = { ...prev };
+      delete next[itemId];
+      return next;
+    });
+  };
 
   const inputClass =
     'w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-900 dark:focus:ring-white focus:border-transparent transition-all duration-200';
@@ -305,11 +330,10 @@ export function InvoiceForm({ invoice, onChange, clients = [] }: InvoiceFormProp
                       type="text"
                       inputMode="decimal"
                       className={inputClass}
-                      value={item.rate === 0 ? '' : item.rate}
-                      onChange={(e) => {
-                        const val = e.target.value.replace(/[^0-9.]/g, '');
-                        updateLineItem(item.id, { rate: val === '' ? 0 : parseFloat(val) || 0 });
-                      }}
+                      value={getRateValue(item.id, item.rate)}
+                      onFocus={() => handleRateFocus(item.id, item.rate)}
+                      onChange={(e) => handleRateChange(item.id, e.target.value)}
+                      onBlur={() => handleRateBlur(item.id)}
                     />
                   </div>
                   <div className="flex items-end justify-between">
@@ -378,11 +402,10 @@ export function InvoiceForm({ invoice, onChange, clients = [] }: InvoiceFormProp
                     type="text"
                     inputMode="decimal"
                     className={inputClass}
-                    value={item.rate === 0 ? '' : item.rate}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/[^0-9.]/g, '');
-                      updateLineItem(item.id, { rate: val === '' ? 0 : parseFloat(val) || 0 });
-                    }}
+                    value={getRateValue(item.id, item.rate)}
+                    onFocus={() => handleRateFocus(item.id, item.rate)}
+                    onChange={(e) => handleRateChange(item.id, e.target.value)}
+                    onBlur={() => handleRateBlur(item.id)}
                   />
                 </div>
                 <div className="col-span-1 text-right text-sm font-medium text-neutral-900 dark:text-white">
