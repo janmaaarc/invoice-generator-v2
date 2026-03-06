@@ -98,6 +98,34 @@ export function InvoiceForm({ invoice, onChange, clients = [] }: InvoiceFormProp
     });
   };
 
+  const [editingQtys, setEditingQtys] = useState<Record<string, string>>({});
+
+  const getQtyValue = (itemId: string, qty: number) =>
+    itemId in editingQtys ? editingQtys[itemId] : (qty === 0 ? '' : qty);
+
+  const handleQtyFocus = (itemId: string, qty: number) => {
+    setEditingQtys(prev => ({ ...prev, [itemId]: qty === 0 ? '' : String(qty) }));
+  };
+
+  const handleQtyChange = (itemId: string, rawValue: string) => {
+    const val = rawValue.replace(/[^0-9.]/g, '');
+    setEditingQtys(prev => ({ ...prev, [itemId]: val }));
+    const parsed = parseFloat(val);
+    updateLineItem(itemId, { quantity: !isNaN(parsed) ? parsed : 0 });
+  };
+
+  const handleQtyBlur = (itemId: string) => {
+    setEditingQtys(prev => {
+      const next = { ...prev };
+      delete next[itemId];
+      return next;
+    });
+    const item = invoice.lineItems.find(i => i.id === itemId);
+    if (item && item.quantity === 0) {
+      updateLineItem(itemId, { quantity: 1 });
+    }
+  };
+
   const getPaymentPlaceholder = (method: string): string => {
     const lower = method.toLowerCase().trim();
     if (lower.includes('paypal')) return 'paypal.me/username';
@@ -345,18 +373,12 @@ export function InvoiceForm({ invoice, onChange, clients = [] }: InvoiceFormProp
                     <label className="text-xs text-neutral-400 mb-1 block">Qty</label>
                     <input
                       type="text"
-                      inputMode="numeric"
+                      inputMode="decimal"
                       className={inputClass}
-                      value={item.quantity === 0 ? '' : item.quantity}
-                      onChange={(e) => {
-                        const val = e.target.value.replace(/[^0-9]/g, '');
-                        updateLineItem(item.id, { quantity: val === '' ? 0 : parseInt(val, 10) });
-                      }}
-                      onBlur={(e) => {
-                        if (e.target.value === '' || parseInt(e.target.value, 10) < 1) {
-                          updateLineItem(item.id, { quantity: 1 });
-                        }
-                      }}
+                      value={getQtyValue(item.id, item.quantity)}
+                      onFocus={() => handleQtyFocus(item.id, item.quantity)}
+                      onChange={(e) => handleQtyChange(item.id, e.target.value)}
+                      onBlur={() => handleQtyBlur(item.id)}
                     />
                   </div>
                   <div>
@@ -418,18 +440,12 @@ export function InvoiceForm({ invoice, onChange, clients = [] }: InvoiceFormProp
                 <div className="col-span-2">
                   <input
                     type="text"
-                    inputMode="numeric"
+                    inputMode="decimal"
                     className={inputClass}
-                    value={item.quantity === 0 ? '' : item.quantity}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/[^0-9]/g, '');
-                      updateLineItem(item.id, { quantity: val === '' ? 0 : parseInt(val, 10) });
-                    }}
-                    onBlur={(e) => {
-                      if (e.target.value === '' || parseInt(e.target.value, 10) < 1) {
-                        updateLineItem(item.id, { quantity: 1 });
-                      }
-                    }}
+                    value={getQtyValue(item.id, item.quantity)}
+                    onFocus={() => handleQtyFocus(item.id, item.quantity)}
+                    onChange={(e) => handleQtyChange(item.id, e.target.value)}
+                    onBlur={() => handleQtyBlur(item.id)}
                   />
                 </div>
                 <div className="col-span-2">
