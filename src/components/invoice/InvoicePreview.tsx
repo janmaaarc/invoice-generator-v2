@@ -1,6 +1,31 @@
 import { forwardRef } from 'react'
 import { formatCurrency, getInvoiceSubtotal, CURRENCIES } from '../../types'
-import type { InvoiceData, AppSettings } from '../../types'
+import type { InvoiceData, AppSettings, BankDetails } from '../../types'
+
+function BankBlock({ method, details }: { method: string; details: BankDetails }) {
+  const rows: [string, string][] = [
+    ['Bank', details.bankName],
+    ['Account Name', details.accountName],
+    ['Account No.', details.accountNumber],
+    ['SWIFT / BIC', details.swiftCode],
+    ['Address', details.address],
+  ].filter(([, v]) => v) as [string, string][]
+  return (
+    <>
+      <p style={{ fontSize: 13, fontWeight: 600, margin: '0 0 8px', color: '#09090b' }}>{method || 'Bank Transfer'}</p>
+      <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+        <tbody>
+          {rows.map(([label, value]) => (
+            <tr key={label}>
+              <td style={{ fontSize: 10, color: '#a1a1aa', paddingRight: 14, paddingBottom: 3, verticalAlign: 'top', whiteSpace: 'nowrap' }}>{label}</td>
+              <td style={{ fontSize: 11, fontWeight: 500, color: '#09090b', paddingBottom: 3, verticalAlign: 'top' }}>{value}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </>
+  )
+}
 
 function TotalsBlock({ invoice, currency, accentColor, totalSize = 24, totalLabel = 'Total', totalBoxStyle }: {
   invoice: InvoiceData
@@ -124,11 +149,17 @@ function MinimalPreview({ invoice, settings, currency }: {
         <TotalsBlock invoice={invoice} currency={currency} accentColor={accent} />
       </div>
 
-      {(invoice.paymentMethod || invoice.paymentDetails) && (
+      {(invoice.paymentMethod || invoice.paymentDetails || invoice.bankDetails) && (
         <div style={{ borderTop: '1px solid #f4f4f5', paddingTop: 24, marginBottom: 24 }}>
-          <p style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: accent, margin: '0 0 8px' }}>Payment</p>
-          {invoice.paymentMethod && <p style={{ fontSize: 13, fontWeight: 500, margin: '0 0 2px' }}>{invoice.paymentMethod}</p>}
-          {invoice.paymentDetails && <p style={{ fontSize: 13, color: '#71717a', margin: 0 }}>{invoice.paymentDetails}</p>}
+          <p style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: accent, margin: '0 0 10px' }}>Payment</p>
+          {invoice.bankDetails ? (
+            <BankBlock method={invoice.paymentMethod} details={invoice.bankDetails} />
+          ) : (
+            <>
+              {invoice.paymentMethod && <p style={{ fontSize: 13, fontWeight: 500, margin: '0 0 2px' }}>{invoice.paymentMethod}</p>}
+              {invoice.paymentDetails && <p style={{ fontSize: 13, color: '#71717a', margin: 0 }}>{invoice.paymentDetails}</p>}
+            </>
+          )}
         </div>
       )}
 
@@ -225,11 +256,17 @@ function ClassicPreview({ invoice, settings, currency }: {
           />
         </div>
 
-        {(invoice.paymentMethod || invoice.paymentDetails) && (
+        {(invoice.paymentMethod || invoice.paymentDetails || invoice.bankDetails) && (
           <div style={{ borderTop: '2px solid #f4f4f5', paddingTop: 24, marginBottom: 24 }}>
-            <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#a1a1aa', margin: '0 0 8px' }}>Payment</p>
-            {invoice.paymentMethod && <p style={{ fontSize: 13, fontWeight: 500, margin: '0 0 2px' }}>{invoice.paymentMethod}</p>}
-            {invoice.paymentDetails && <p style={{ fontSize: 13, color: '#71717a', margin: 0 }}>{invoice.paymentDetails}</p>}
+            <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#a1a1aa', margin: '0 0 10px' }}>Payment</p>
+            {invoice.bankDetails ? (
+              <BankBlock method={invoice.paymentMethod} details={invoice.bankDetails} />
+            ) : (
+              <>
+                {invoice.paymentMethod && <p style={{ fontSize: 13, fontWeight: 500, margin: '0 0 2px' }}>{invoice.paymentMethod}</p>}
+                {invoice.paymentDetails && <p style={{ fontSize: 13, color: '#71717a', margin: 0 }}>{invoice.paymentDetails}</p>}
+              </>
+            )}
           </div>
         )}
 
@@ -330,11 +367,17 @@ function ModernPreview({ invoice, settings, currency }: {
           </div>
         </div>
 
-        {(invoice.paymentMethod || invoice.paymentDetails) && (
+        {(invoice.paymentMethod || invoice.paymentDetails || invoice.bankDetails) && (
           <div style={{ background: '#f9f9f9', borderRadius: 8, padding: '16px 20px', marginBottom: 24 }}>
-            <p style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: accent, margin: '0 0 8px' }}>Payment</p>
-            {invoice.paymentMethod && <p style={{ fontSize: 13, fontWeight: 600, margin: '0 0 2px' }}>{invoice.paymentMethod}</p>}
-            {invoice.paymentDetails && <p style={{ fontSize: 13, color: '#71717a', margin: 0 }}>{invoice.paymentDetails}</p>}
+            <p style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: accent, margin: '0 0 10px' }}>Payment</p>
+            {invoice.bankDetails ? (
+              <BankBlock method={invoice.paymentMethod} details={invoice.bankDetails} />
+            ) : (
+              <>
+                {invoice.paymentMethod && <p style={{ fontSize: 13, fontWeight: 600, margin: '0 0 2px' }}>{invoice.paymentMethod}</p>}
+                {invoice.paymentDetails && <p style={{ fontSize: 13, color: '#71717a', margin: 0 }}>{invoice.paymentDetails}</p>}
+              </>
+            )}
           </div>
         )}
 

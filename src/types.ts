@@ -1,3 +1,11 @@
+export interface BankDetails {
+  bankName: string;
+  accountName: string;
+  accountNumber: string;
+  swiftCode: string;
+  address: string;
+}
+
 export interface LineItem {
   id: string;
   description: string;
@@ -25,6 +33,7 @@ export interface InvoiceData {
 
   paymentMethod: string;
   paymentDetails: string;
+  bankDetails?: BankDetails;
   paymentQrImage?: string;
   notes: string;
   currency: string;
