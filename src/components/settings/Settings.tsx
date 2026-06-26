@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react'
-import { Upload, X, User, Hash, Palette, Database, Users, RefreshCw, Check, Plus, Trash2, CreditCard, Layers, ToggleLeft, ToggleRight } from 'lucide-react'
+import { Upload, X, User, Hash, Palette, Database, Users, RefreshCw, Check, Plus, Trash2, CreditCard, Layers, ToggleLeft, ToggleRight, ChevronRight, ChevronLeft } from 'lucide-react'
 import { DEFAULT_SETTINGS, ACCENT_COLORS, DUE_DATE_PRESETS, formatCurrency, hasBankDetails } from '../../types'
 import type { AppData, InvoiceData, SavedClient, SavedPaymentMethod, SavedLineItem, RecurringInvoice, RecurringFrequency, RecurringTemplate, BankDetails } from '../../types'
 import { exportDataAsJson, importDataFromJson } from '../../storage'
@@ -51,6 +51,7 @@ export function Settings({ data, onChange, onSave, onClose, prefillInvoice }: Se
   const fileRef = useRef<HTMLInputElement>(null)
   const importRef = useRef<HTMLInputElement>(null)
   const [tab, setTab] = useState<Tab>(prefillInvoice ? 'recurring' : 'profile')
+  const [mobileView, setMobileView] = useState<'menu' | 'content'>(prefillInvoice ? 'content' : 'menu')
   const [clientDraft, setClientDraft] = useState<SavedClient>({ id: crypto.randomUUID(), name: '', email: '', address: '' })
   const [paymentDraft, setPaymentDraft] = useState<SavedPaymentMethod>({ id: crypto.randomUUID(), name: '', details: '', type: 'simple' })
   const [selectedPayType, setSelectedPayType] = useState<string>('paypal')
@@ -246,18 +247,35 @@ export function Settings({ data, onChange, onSave, onClose, prefillInvoice }: Se
     .replace('{client}', 'Acme Corp')
     .replace('{date}', new Date().toISOString().split('T')[0])
 
+  const activeTab = TABS.find(t => t.id === tab)!
+
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
-        <h2 className="text-base font-semibold tracking-tight">Settings</h2>
+      {/* Header — desktop always shows "Settings", mobile shows back+title when in content */}
+      <div className="flex items-center justify-between px-4 md:px-6 py-4 border-b border-[var(--border)]">
+        <div className="flex items-center gap-2">
+          {/* Mobile back button when in content view */}
+          {mobileView === 'content' && (
+            <button
+              onClick={() => setMobileView('menu')}
+              className="md:hidden p-1 -ml-1 text-[var(--muted)] hover:text-[var(--text)] transition-colors"
+            >
+              <ChevronLeft size={18} />
+            </button>
+          )}
+          <h2 className="text-base font-semibold tracking-tight">
+            <span className="hidden md:inline">Settings</span>
+            <span className="md:hidden">{mobileView === 'menu' ? 'Settings' : activeTab.label}</span>
+          </h2>
+        </div>
         <button onClick={onClose} className="p-1.5 rounded-md text-[var(--muted)] hover:bg-[var(--surface)] hover:text-[var(--text)] transition-colors">
           <X size={15} />
         </button>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Left nav */}
-        <div className="w-44 flex-shrink-0 border-r border-[var(--border)] px-2 py-4 space-y-0.5">
+        {/* Desktop left nav */}
+        <div className="hidden md:block w-44 flex-shrink-0 border-r border-[var(--border)] px-2 py-4 space-y-0.5">
           {TABS.map(t => {
             const Icon = t.icon
             return (
@@ -277,10 +295,32 @@ export function Settings({ data, onChange, onSave, onClose, prefillInvoice }: Se
           })}
         </div>
 
-        {/* Right content */}
-        <div className="flex-1 overflow-hidden flex flex-col">
+        {/* Mobile menu list */}
+        {mobileView === 'menu' && (
+          <div className="md:hidden flex-1 overflow-y-auto px-4 py-4 space-y-1">
+            {TABS.map(t => {
+              const Icon = t.icon
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => { setTab(t.id); setMobileView('content') }}
+                  className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl bg-[var(--surface)] text-left active:opacity-70 transition-opacity"
+                >
+                  <div className="flex items-center gap-3">
+                    <Icon size={16} className="text-[var(--muted)]" />
+                    <span className="text-sm text-[var(--text)]">{t.label}</span>
+                  </div>
+                  <ChevronRight size={15} className="text-[var(--muted)]" />
+                </button>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Right content — always shown on desktop, shown in content view on mobile */}
+        <div className={`flex-1 overflow-hidden flex-col ${mobileView === 'content' ? 'flex' : 'hidden'} md:flex`}>
           <div className="flex-1 overflow-y-auto">
-          <div className="max-w-xl px-8 py-6">
+          <div className="max-w-xl px-4 md:px-8 py-6">
 
             {tab === 'profile' && (
               <>

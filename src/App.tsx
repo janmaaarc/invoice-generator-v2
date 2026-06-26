@@ -24,7 +24,16 @@ export default function App() {
   const [mobilePanel, setMobilePanel] = useState<'list' | 'detail'>('list')
   const [recurringPrefill, setRecurringPrefill] = useState<InvoiceData | undefined>(undefined)
   const [showSettings, setShowSettings] = useState(false)
+  const [showShortcuts, setShowShortcuts] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const previewRef = useRef<HTMLDivElement>(null)
+
+  const filteredInvoices = searchQuery.trim()
+    ? data.invoices.filter(inv =>
+        inv.toName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        inv.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : data.invoices
 
   const selectedInvoice = data.invoices.find(inv => inv.id === selectedId) ?? null
 
@@ -48,11 +57,14 @@ export default function App() {
     setMobilePanel('detail')
   }
 
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => () => { if (saveTimer.current) clearTimeout(saveTimer.current) }, [])
+
   function handleSave() {
+    if (saveTimer.current) clearTimeout(saveTimer.current)
     saveAppData(data)
   }
-
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   function handleChange(invoice: InvoiceData) {
     const nextData: AppData = {
@@ -122,10 +134,11 @@ export default function App() {
       : generateWhatsAppShareLink(selectedInvoice)
     window.open(link, '_blank')
     const now = new Date().toISOString()
-    handleChange({
-      ...selectedInvoice,
-      sentHistory: [...(selectedInvoice.sentHistory || []), { date: now, method: type }],
-    })
+    const entry: { date: string; method: 'email' | 'whatsapp' | 'pdf' } = { date: now, method: type }
+    const updated = { ...selectedInvoice, sentHistory: [...(selectedInvoice.sentHistory || []), entry] }
+    const nextData: AppData = { ...data, invoices: data.invoices.map(inv => inv.id === updated.id ? updated : inv) }
+    setData(nextData)
+    saveAppData(nextData)
   }
 
   async function handleDownloadPdf() {
@@ -143,16 +156,19 @@ export default function App() {
       .from(previewRef.current)
       .save()
     const now = new Date().toISOString()
-    handleChange({
-      ...selectedInvoice,
-      sentHistory: [...(selectedInvoice.sentHistory || []), { date: now, method: 'pdf' }],
-    })
+    const pdfEntry: { date: string; method: 'email' | 'whatsapp' | 'pdf' } = { date: now, method: 'pdf' }
+    const updated = { ...selectedInvoice, sentHistory: [...(selectedInvoice.sentHistory || []), pdfEntry] }
+    const nextData: AppData = { ...data, invoices: data.invoices.map(inv => inv.id === updated.id ? updated : inv) }
+    setData(nextData)
+    saveAppData(nextData)
   }
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     const target = e.target as HTMLElement
     const isInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)
     if (!isInput && e.key.toLowerCase() === 'n') { e.preventDefault(); handleNewInvoice() }
+    if (!isInput && e.key === '?') { e.preventDefault(); setShowShortcuts(v => !v) }
+    if (e.key === 'Escape') { setShowShortcuts(false) }
     if ((e.metaKey || e.ctrlKey) && e.key === 's') { e.preventDefault(); handleSave() }
     if ((e.metaKey || e.ctrlKey) && e.key === 'p') { e.preventDefault(); setView(v => v === 'editor' ? 'preview' : 'editor') }
   }, [data])
@@ -193,7 +209,6 @@ export default function App() {
         invoice={selectedInvoice}
         data={data}
         onChange={handleChange}
-        onSave={handleSave}
         onDownloadPdf={handleDownloadPdf}
         onShare={handleShare}
         onStatusChange={handleStatusChange}
@@ -214,15 +229,18 @@ export default function App() {
       )}
       <Shell
         mobilePanel={mobilePanel}
+        onCloseSidebar={() => setMobilePanel('detail')}
         sidebar={
           <Sidebar
             onNewInvoice={handleNewInvoice}
             onSettingsOpen={() => setShowSettings(true)}
             theme={theme}
             onThemeToggle={toggle}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
           >
             <InvoiceList
-              invoices={data.invoices}
+              invoices={filteredInvoices}
               selectedId={selectedId}
               onSelect={handleSelectInvoice}
               onDelete={handleDeleteInvoice}
@@ -233,6 +251,30 @@ export default function App() {
         }
         main={renderMain()}
       />
+      {showShortcuts && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          onClick={() => setShowShortcuts(false)}
+        >
+          <div className="bg-[var(--bg)] border border-[var(--border)] rounded-2xl shadow-2xl p-6 w-80 mx-4" onClick={e => e.stopPropagation()}>
+            <p className="text-xs font-semibold uppercase tracking-widest text-[var(--muted)] mb-4">Keyboard shortcuts</p>
+            <div className="space-y-2">
+              {[
+                ['N', 'New invoice'],
+                ['?', 'Show shortcuts'],
+                ['⌘ S', 'Save now'],
+                ['⌘ P', 'Toggle preview'],
+                ['Esc', 'Close panels'],
+              ].map(([key, label]) => (
+                <div key={key} className="flex items-center justify-between">
+                  <span className="text-sm text-[var(--muted)]">{label}</span>
+                  <kbd className="px-2 py-0.5 text-[11px] font-mono bg-[var(--surface)] border border-[var(--border)] rounded text-[var(--text)]">{key}</kbd>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
       {showSettings && (
         <div
           className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/40 backdrop-blur-sm"

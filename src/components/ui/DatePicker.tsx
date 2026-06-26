@@ -40,13 +40,13 @@ export function DatePicker({ label, value, onChange }: DatePickerProps) {
     : ''
 
   return (
-    <div className="flex flex-col gap-1" ref={ref}>
-      {label && <label className="text-xs font-medium text-[var(--muted)]">{label}</label>}
+    <div className="flex flex-col gap-1.5" ref={ref}>
+      {label && <label className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)]">{label}</label>}
       <div className="relative">
         <button
           type="button"
           onClick={() => setOpen(o => !o)}
-          className="w-full flex items-center justify-between px-3 py-2 text-sm bg-transparent border border-[var(--border)] rounded-md text-[var(--text)] hover:border-[var(--muted)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] transition-colors"
+          className="w-full flex items-center justify-between px-0 py-1.5 text-sm bg-transparent border-0 border-b border-[var(--border)] text-[var(--text)] hover:border-[var(--muted)] focus:outline-none focus:border-[var(--text)] transition-colors"
         >
           <span className={display ? 'text-[var(--text)]' : 'text-[var(--muted)]'}>
             {display || 'Pick a date'}

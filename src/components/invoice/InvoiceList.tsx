@@ -2,8 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { MoreVertical, Trash2, Copy, RefreshCw } from 'lucide-react'
 import { formatCurrency, getInvoiceTotal } from '../../types'
-import type { InvoiceData } from '../../types'
-import { Badge } from '../ui'
+import type { InvoiceData, InvoiceStatus } from '../../types'
 
 interface InvoiceListProps {
   invoices: InvoiceData[]
@@ -12,6 +11,18 @@ interface InvoiceListProps {
   onDelete: (id: string) => void
   onDuplicate: (id: string) => void
   onMakeRecurring: (id: string) => void
+}
+
+const statusDot: Record<InvoiceStatus, string> = {
+  draft: 'bg-[var(--muted)] opacity-40',
+  sent: 'bg-blue-400',
+  paid: 'bg-emerald-400',
+}
+
+const statusLabel: Record<InvoiceStatus, string> = {
+  draft: 'Draft',
+  sent: 'Sent',
+  paid: 'Paid',
 }
 
 function RowMenu({ id, onDelete, onDuplicate, onMakeRecurring }: { id: string; onDelete: (id: string) => void; onDuplicate: (id: string) => void; onMakeRecurring: (id: string) => void }) {
@@ -46,10 +57,10 @@ function RowMenu({ id, onDelete, onDuplicate, onMakeRecurring }: { id: string; o
       <button
         ref={buttonRef}
         onClick={handleOpen}
-        className="p-1.5 rounded text-[var(--muted)] hover:text-[var(--text)] sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-[var(--surface)]"
+        className="p-1.5 rounded text-[var(--muted)] hover:text-[var(--text)] sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
         aria-label="More options"
       >
-        <MoreVertical size={13} />
+        <MoreVertical size={12} />
       </button>
       {open && createPortal(
         <div
@@ -85,49 +96,58 @@ function RowMenu({ id, onDelete, onDuplicate, onMakeRecurring }: { id: string; o
 export function InvoiceList({ invoices, selectedId, onSelect, onDelete, onDuplicate, onMakeRecurring }: InvoiceListProps) {
   if (invoices.length === 0) {
     return (
-      <div className="px-3 py-6 text-center text-xs text-[var(--muted)]">
-        No invoices yet.
-        <br />
-        Press{' '}
-        <kbd className="px-1 py-0.5 text-[10px] border border-[var(--border)] rounded">N</kbd>
-        {' '}to create one.
+      <div className="px-4 py-8 text-center">
+        <p className="text-xs text-[var(--muted)]">No invoices yet.</p>
+        <p className="text-xs text-[var(--muted)] mt-1 opacity-60">
+          Press <kbd className="px-1 py-0.5 text-[10px] border border-[var(--border)] rounded font-mono">N</kbd> to create one.
+        </p>
       </div>
     )
   }
 
   return (
-    <div className="space-y-0.5">
-      {invoices.map(invoice => (
-        <div
-          key={invoice.id}
-          className={`group flex items-center rounded-lg transition-colors animate-row-in ${
-            selectedId === invoice.id
-              ? 'bg-[var(--bg)] shadow-[0_1px_3px_0_rgb(0,0,0,0.06)]'
-              : 'hover:bg-[var(--bg)]'
-          }`}
-        >
-          <button
-            onClick={() => onSelect(invoice.id)}
-            className="flex-1 min-w-0 text-left px-3 py-3"
+    <div className="space-y-px py-1">
+      {invoices.map(invoice => {
+        const selected = selectedId === invoice.id
+        return (
+          <div
+            key={invoice.id}
+            className={`group relative flex items-center rounded-lg transition-all animate-row-in ${
+              selected
+                ? 'bg-[var(--bg)]'
+                : 'hover:bg-[var(--bg)]/60'
+            }`}
           >
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <span className="text-sm font-medium text-[var(--text)] truncate">
-                {invoice.toName || <span className="text-[var(--muted)] font-normal">No client</span>}
-              </span>
-              <span className="text-sm font-semibold text-[var(--text)] flex-shrink-0 tabular-nums">
-                {formatCurrency(getInvoiceTotal(invoice), invoice.currency)}
-              </span>
+
+            <button
+              onClick={() => onSelect(invoice.id)}
+              className="flex-1 min-w-0 text-left px-3 py-2.5"
+            >
+              <div className="flex items-baseline justify-between gap-2 mb-1">
+                <span className={`text-[13px] truncate transition-colors ${
+                  selected ? 'font-medium text-[var(--text)]' : 'text-[var(--text)] opacity-75'
+                }`}>
+                  {invoice.toName || <span className="text-[var(--muted)] font-normal italic text-xs">No client</span>}
+                </span>
+                <span className={`text-xs tabular-nums flex-shrink-0 transition-colors ${
+                  selected ? 'text-[var(--text)] font-medium' : 'text-[var(--muted)]'
+                }`}>
+                  {formatCurrency(getInvoiceTotal(invoice), invoice.currency)}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className={`w-1 h-1 rounded-full flex-shrink-0 ${statusDot[invoice.status]}`} />
+                <span className="text-[10px] text-[var(--muted)] opacity-50 flex-shrink-0">{statusLabel[invoice.status]}</span>
+                <span className="text-[10px] text-[var(--muted)] opacity-30 truncate flex-1 font-mono text-right">{invoice.invoiceNumber}</span>
+              </div>
+            </button>
+
+            <div className="pr-1.5">
+              <RowMenu id={invoice.id} onDelete={onDelete} onDuplicate={onDuplicate} onMakeRecurring={onMakeRecurring} />
             </div>
-            <div className="flex items-center gap-1">
-              <span className="text-[11px] font-mono text-[var(--muted)] truncate flex-1">{invoice.invoiceNumber}</span>
-              <Badge status={invoice.status} />
-            </div>
-          </button>
-          <div className="pr-1.5">
-            <RowMenu id={invoice.id} onDelete={onDelete} onDuplicate={onDuplicate} onMakeRecurring={onMakeRecurring} />
           </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }

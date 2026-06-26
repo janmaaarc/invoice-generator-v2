@@ -1,5 +1,4 @@
-import { Plus, Settings, Sun, Moon } from 'lucide-react'
-import { Button } from '../ui'
+import { Plus, Settings, Sun, Moon, Search, X } from 'lucide-react'
 
 export type Section = 'invoices'
 
@@ -9,58 +8,74 @@ interface SidebarProps {
   theme: 'light' | 'dark'
   onThemeToggle: () => void
   children: React.ReactNode
+  searchQuery: string
+  onSearchChange: (q: string) => void
 }
 
-function NavItem({ icon: Icon, label, active, onClick }: {
-  icon: React.ElementType; label: string; active: boolean; onClick: () => void
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors ${
-        active
-          ? 'bg-[var(--bg)] text-[var(--text)] font-medium'
-          : 'text-[var(--muted)] hover:bg-[var(--bg)] hover:text-[var(--text)]'
-      }`}
-    >
-      <Icon size={15} />
-      {label}
-    </button>
-  )
-}
-
-export function Sidebar({ onNewInvoice, onSettingsOpen, theme, onThemeToggle, children }: SidebarProps) {
+export function Sidebar({ onNewInvoice, onSettingsOpen, theme, onThemeToggle, children, searchQuery, onSearchChange }: SidebarProps) {
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-4 py-4 border-b border-[var(--border)]">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 pt-5 pb-5">
         <div className="flex items-center gap-2">
-          <img src="/logo.png" alt="Invoix" className="w-[18px] h-[18px] dark:invert" />
-          <span className="text-[15px] tracking-[-0.02em]">
+          <img src="/logo.png" alt="Invoix" className="w-[15px] h-[15px] dark:invert opacity-70" />
+          <span className="text-[13px] tracking-[-0.02em]">
             <span className="font-medium text-[var(--text)]">Invo</span><span className="font-black text-[var(--text)]">ix</span>
           </span>
         </div>
         <button
           onClick={onThemeToggle}
-          className="p-1.5 rounded-md text-[var(--muted)] hover:bg-[var(--surface)] hover:text-[var(--text)] transition-colors"
+          className="p-1.5 text-[var(--muted)] hover:text-[var(--text)] transition-colors"
           aria-label="Toggle theme"
         >
-          {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+          {theme === 'dark' ? <Sun size={13} /> : <Moon size={13} />}
         </button>
       </div>
 
-      <div className="px-3 pt-3 pb-2">
-        <Button className="w-full justify-start" onClick={onNewInvoice}>
-          <Plus size={14} />
-          New Invoice
-        </Button>
+      {/* Search */}
+      <div className="px-4 pb-3">
+        <div className="flex items-center gap-2 border-b border-[var(--border)] pb-1.5 focus-within:border-[var(--text)] transition-colors">
+          <Search size={11} className="text-[var(--muted)] flex-shrink-0" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => onSearchChange(e.target.value)}
+            placeholder="Search…"
+            className="flex-1 text-xs bg-transparent outline-none text-[var(--text)] placeholder:text-[var(--muted)]"
+          />
+          {searchQuery && (
+            <button onClick={() => onSearchChange('')} className="flex-shrink-0 text-[var(--muted)] hover:text-[var(--text)] transition-colors">
+              <X size={10} />
+            </button>
+          )}
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-1 py-1">
+      {/* New Invoice */}
+      <div className="px-4 pb-4">
+        <button
+          onClick={onNewInvoice}
+          className="flex items-center gap-1.5 text-[var(--muted)] hover:text-[var(--text)] transition-colors text-xs"
+        >
+          <Plus size={12} />
+          New invoice
+        </button>
+      </div>
+
+      {/* Invoice list */}
+      <div className="flex-1 overflow-y-auto px-2">
         {children}
       </div>
 
-      <div className="border-t border-[var(--border)] px-3 py-3">
-        <NavItem icon={Settings} label="Settings" active={false} onClick={onSettingsOpen} />
+      {/* Footer */}
+      <div className="px-3 py-3 border-t border-[var(--border)]">
+        <button
+          onClick={onSettingsOpen}
+          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--bg)] transition-colors text-sm"
+        >
+          <Settings size={13} />
+          Settings
+        </button>
       </div>
     </div>
   )

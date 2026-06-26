@@ -13,7 +13,6 @@ interface InvoiceEditorProps {
   invoice: InvoiceData
   data: AppData
   onChange: (invoice: InvoiceData) => void
-  onSave: () => void
   onDownloadPdf: () => void
   onShare: (type: 'email' | 'whatsapp') => void
   onStatusChange: (status: InvoiceStatus) => void
@@ -25,9 +24,62 @@ interface InvoiceEditorProps {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] mb-3">
+    <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--muted)] mb-4 flex items-center gap-2 before:content-[''] before:block before:w-3 before:h-px before:bg-[var(--muted)] before:opacity-50">
       {children}
     </p>
+  )
+}
+
+interface ClientSuggestion { name: string; email: string; address: string }
+
+function ClientNameField({ value, onChange, onSelect, suggestions, inputCls }: {
+  value: string
+  onChange: (name: string) => void
+  onSelect: (client: ClientSuggestion) => void
+  suggestions: ClientSuggestion[]
+  inputCls: string
+}) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  const filtered = value.trim()
+    ? suggestions.filter(s => s.name.toLowerCase().includes(value.toLowerCase()))
+    : []
+
+  useEffect(() => {
+    function onDown(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [])
+
+  return (
+    <div className="flex flex-col gap-1.5 relative" ref={ref}>
+      <label className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)]">Client Name</label>
+      <input
+        className={inputCls}
+        value={value}
+        onChange={e => { onChange(e.target.value); setOpen(true) }}
+        onFocus={() => setOpen(true)}
+        placeholder="Client or company"
+      />
+      {open && filtered.length > 0 && (
+        <div className="absolute top-full left-0 right-0 mt-1 z-20 bg-[var(--bg)] border border-[var(--border)] rounded-lg shadow-[0_4px_16px_0_rgb(0,0,0,0.12)] py-1 animate-dropdown">
+          {filtered.map(s => (
+            <button
+              key={s.name}
+              type="button"
+              onMouseDown={e => { e.preventDefault(); onSelect(s); setOpen(false) }}
+              className="w-full text-left px-3 py-2 hover:bg-[var(--surface)] transition-colors"
+            >
+              <p className="text-sm text-[var(--text)]">{s.name}</p>
+              {s.email && <p className="text-[11px] text-[var(--muted)] mt-0.5">{s.email}</p>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -84,7 +136,7 @@ function AddPaymentForm({ onAdd }: { onAdd: (amount: number, note: string, date:
 }
 
 export function InvoiceEditor({
-  invoice, data, onChange, onSave, onDownloadPdf, onShare, onStatusChange,
+  invoice, data, onChange, onDownloadPdf, onShare, onStatusChange,
   onBack, view, onViewChange,
 }: InvoiceEditorProps) {
   const [shareOpen, setShareOpen] = useState(false)
@@ -93,9 +145,17 @@ export function InvoiceEditor({
   const [paymentsOpen, setPaymentsOpen] = useState(false)
   const observerRef = useRef<ResizeObserver | null>(null)
   const mountedRef = useRef(true)
+  const notesRef = useRef<HTMLTextAreaElement>(null)
   const [previewScale, setPreviewScale] = useState(0.75)
 
   useEffect(() => () => { mountedRef.current = false }, [])
+
+  useEffect(() => {
+    if (notesRef.current) {
+      notesRef.current.style.height = 'auto'
+      notesRef.current.style.height = notesRef.current.scrollHeight + 'px'
+    }
+  }, [invoice.notes])
 
   const previewContainerRef = useCallback((el: HTMLDivElement | null) => {
     observerRef.current?.disconnect()
@@ -143,15 +203,15 @@ export function InvoiceEditor({
 
   const total = getInvoiceTotal(invoice)
   const subtotal = getInvoiceSubtotal(invoice)
-  const selectCls = 'px-3 py-2 text-sm bg-transparent border border-[var(--border)] rounded-md text-[var(--text)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]'
-  const inputCls = 'px-3 py-2 text-sm bg-transparent border border-[var(--border)] rounded-md text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]'
+  const selectCls = 'px-0 py-1.5 text-sm bg-transparent border-0 border-b border-[var(--border)] text-[var(--text)] focus:outline-none focus:border-[var(--text)] transition-colors'
+  const inputCls = 'px-0 py-1.5 text-sm bg-transparent border-0 border-b border-[var(--border)] text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--text)] transition-colors w-full'
 
   return (
     <div className="flex flex-col h-full">
       {/* Action bar */}
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 md:gap-3 px-3 md:px-6 py-2.5 md:py-3 border-b border-[var(--border)]">
         {/* Left: back + invoice identity */}
-        <div className="flex items-center gap-1.5 md:gap-2 min-w-0">
+        <div className="flex items-center gap-1.5 md:gap-2 min-w-0 overflow-hidden">
           {onBack && (
             <button onClick={onBack} className="md:hidden flex-shrink-0 p-1 -ml-1 text-[var(--muted)] hover:text-[var(--text)]">
               <ChevronLeft size={18} />
@@ -160,7 +220,7 @@ export function InvoiceEditor({
           <input
             value={invoice.invoiceNumber}
             onChange={e => set('invoiceNumber', e.target.value)}
-            className="text-xs font-mono text-[var(--muted)] bg-transparent border-none outline-none shrink-0 min-w-0 w-auto hover:text-[var(--text)] focus:text-[var(--text)] transition-colors"
+            className="hidden sm:block text-xs font-mono text-[var(--muted)] bg-transparent border-none outline-none shrink min-w-0 w-auto hover:text-[var(--text)] focus:text-[var(--text)] transition-colors"
             style={{ width: `${Math.max(invoice.invoiceNumber.length, 8)}ch` }}
           />
           <div className="relative shrink-0 flex items-center">
@@ -239,34 +299,39 @@ export function InvoiceEditor({
           </div>
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto"><div className="max-w-3xl mx-auto px-4 md:px-6 py-6 space-y-8">
+        <div className="flex-1 overflow-y-auto"><div className="max-w-2xl mx-auto px-4 md:px-8 py-8 space-y-6">
 
           {/* Dates + Currency */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <DatePicker
-              label="Invoice Date"
-              value={invoice.invoiceDate}
-              onChange={v => set('invoiceDate', v)}
-            />
-            <DatePicker
-              label="Due Date"
-              value={invoice.dueDate === 'Upon receipt' ? '' : invoice.dueDate}
-              onChange={v => set('dueDate', v)}
-            />
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-[var(--muted)]">Currency</label>
-              <select value={invoice.currency} onChange={e => set('currency', e.target.value)} className={selectCls}>
-                {CURRENCIES.map(c => (
-                  <option key={c.code} value={c.code}>{c.symbol} {c.code}</option>
-                ))}
-              </select>
+          <div className="bg-[var(--surface)] rounded-xl p-5">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+              <DatePicker
+                label="Invoice Date"
+                value={invoice.invoiceDate}
+                onChange={v => set('invoiceDate', v)}
+              />
+              <DatePicker
+                label="Due Date"
+                value={invoice.dueDate === 'Upon receipt' ? '' : invoice.dueDate}
+                onChange={v => set('dueDate', v)}
+              />
+              <div className="flex flex-col gap-1 col-span-2 md:col-span-1">
+                <label className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)]">Currency</label>
+                <div className="relative">
+                  <select value={invoice.currency} onChange={e => set('currency', e.target.value)} className={`${selectCls} appearance-none w-full pr-6`} style={{ WebkitAppearance: 'none' }}>
+                    {CURRENCIES.map(c => (
+                      <option key={c.code} value={c.code}>{c.symbol} {c.code}</option>
+                    ))}
+                  </select>
+                  <ChevronDown size={12} className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--muted)]" />
+                </div>
+              </div>
             </div>
           </div>
 
           {/* From */}
-          <div>
+          <div className="bg-[var(--surface)] rounded-xl p-5">
             <SectionLabel>From</SectionLabel>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Input label="Name" value={invoice.fromName} onChange={e => set('fromName', e.target.value)} placeholder="Your name or company" />
               <Input label="Email" type="email" value={invoice.fromEmail} onChange={e => set('fromEmail', e.target.value)} placeholder="you@example.com" />
               <div className="md:col-span-2">
@@ -276,9 +341,9 @@ export function InvoiceEditor({
           </div>
 
           {/* Bill To */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)]">Bill To</p>
+          <div className="bg-[var(--surface)] rounded-xl p-5">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--muted)] flex items-center gap-2 before:content-[''] before:block before:w-3 before:h-px before:bg-[var(--muted)] before:opacity-50">Bill To</p>
               {data.clients.length > 0 && (
                 <div className="relative">
                   <button
@@ -307,16 +372,20 @@ export function InvoiceEditor({
                 </div>
               )}
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium text-[var(--muted)]">Client Name</label>
-                <input
-                  className={inputCls}
-                  value={invoice.toName}
-                  onChange={e => set('toName', e.target.value)}
-                  placeholder="Client or company"
-                />
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <ClientNameField
+                value={invoice.toName}
+                onChange={name => set('toName', name)}
+                onSelect={client => onChange({ ...invoice, toName: client.name, toEmail: client.email, toAddress: client.address, updatedAt: new Date().toISOString() })}
+                suggestions={Array.from(
+                  new Map(
+                    data.invoices
+                      .filter(inv => inv.id !== invoice.id && inv.toName.trim())
+                      .map(inv => [inv.toName.toLowerCase(), { name: inv.toName, email: inv.toEmail, address: inv.toAddress }])
+                  ).values()
+                )}
+                inputCls={inputCls}
+              />
               <Input label="Client Email" type="email" value={invoice.toEmail} onChange={e => set('toEmail', e.target.value)} placeholder="client@example.com" />
               <div className="md:col-span-2">
                 <Input label="Client Address" value={invoice.toAddress} onChange={e => set('toAddress', e.target.value)} placeholder="Street, City, Country" />
@@ -325,9 +394,9 @@ export function InvoiceEditor({
           </div>
 
           {/* Line Items */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)]">Line Items</p>
+          <div className="bg-[var(--surface)] rounded-xl p-5">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--muted)] flex items-center gap-2 before:content-[''] before:block before:w-3 before:h-px before:bg-[var(--muted)] before:opacity-50">Line Items</p>
               {data.lineItemTemplates.length > 0 && (
                 <div className="relative">
                   <button
@@ -365,116 +434,116 @@ export function InvoiceEditor({
                 </div>
               )}
             </div>
-            <div className="space-y-2">
-              <div className="hidden sm:flex items-center gap-2 text-[11px] text-[var(--muted)] px-1">
-                <span className="flex-1">Description</span>
-                <span className="w-20 text-right">Qty</span>
-                <span className="w-24 text-right">Rate</span>
-                <span className="w-5" />
+            <div className="space-y-1">
+              <div className="hidden sm:grid grid-cols-[1fr_72px_88px_24px] gap-3 text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] pb-2 border-b border-[var(--border)]">
+                <span>Description</span>
+                <span className="text-right">Qty</span>
+                <span className="text-right">Rate</span>
+                <span />
               </div>
               <datalist id="line-item-templates">
                 {data.lineItemTemplates.map(t => <option key={t.id} value={t.description} />)}
               </datalist>
               {invoice.lineItems.map(item => (
-                <div key={item.id} className="group flex flex-wrap sm:flex-nowrap items-center gap-2">
+                <div key={item.id} className="group flex flex-wrap sm:flex-nowrap sm:grid sm:grid-cols-[1fr_72px_88px_24px] items-center gap-3 py-1.5 -mx-1 px-1 rounded-lg hover:bg-[var(--bg)] transition-colors">
                   <input
-                    className={`${inputCls} flex-1 min-w-0 w-full sm:w-auto`}
+                    className="text-sm bg-transparent border-none outline-none text-[var(--text)] placeholder:text-[var(--muted)] w-full min-w-0"
                     value={item.description}
                     onChange={e => setLineItem(item.id, 'description', e.target.value)}
                     placeholder="Service or product"
                     list="line-item-templates"
                   />
-                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <div className="flex items-center gap-2 w-full sm:w-auto sm:contents">
                     <input
                       type="number" min={0} step={1}
-                      className={`${inputCls} flex-1 sm:w-20 text-right tabular-nums`}
+                      className="text-sm bg-transparent border-none outline-none text-[var(--text)] placeholder:text-[var(--muted)] tabular-nums flex-1 min-w-0 sm:text-right"
                       value={item.quantity || ''}
-                      placeholder="Qty"
+                      placeholder="1"
                       onChange={e => setLineItem(item.id, 'quantity', e.target.value === '' ? 0 : Number(e.target.value))}
                     />
                     <input
                       type="number" min={0} step={0.01}
-                      className={`${inputCls} flex-1 sm:w-24 text-right tabular-nums`}
+                      className="text-sm bg-transparent border-none outline-none text-[var(--text)] placeholder:text-[var(--muted)] tabular-nums flex-1 min-w-0 sm:text-right"
                       value={item.rate || ''}
-                      placeholder="Rate"
+                      placeholder="0.00"
                       onChange={e => setLineItem(item.id, 'rate', e.target.value === '' ? 0 : Number(e.target.value))}
                     />
                     <button
                       onClick={() => removeLineItem(item.id)}
-                      className="flex-shrink-0 flex items-center justify-center p-2 -m-1 text-[var(--muted)] hover:text-red-500 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                      className="flex-shrink-0 flex items-center justify-center w-6 text-[var(--muted)] hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
                       aria-label="Remove"
                     >
-                      <Trash2 size={13} />
+                      <Trash2 size={12} />
                     </button>
                   </div>
                 </div>
               ))}
-              <button onClick={addLineItem} className="text-xs text-[var(--muted)] hover:text-[var(--text)] transition-colors px-1 mt-1">
+              <button onClick={addLineItem} className="text-xs text-[var(--muted)] hover:text-[var(--text)] transition-colors mt-2 px-1">
                 + Add item
               </button>
+            </div>
 
-              {/* Totals area */}
-              <div className="pt-4 border-t border-[var(--border)] mt-2 space-y-3">
-                <div className="flex items-center gap-4 justify-end flex-wrap">
+            {/* Totals panel */}
+            <div className="mt-4 pt-4 border-t border-[var(--border)]">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-center gap-4 flex-wrap">
                   <div className="flex items-center gap-2">
-                    <label className="text-xs text-[var(--muted)] whitespace-nowrap">Discount %</label>
+                    <label className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] whitespace-nowrap">Disc %</label>
                     <input
                       type="number" min={0} max={100} step={0.1}
-                      className={`${inputCls} w-20 text-right tabular-nums`}
+                      className="w-14 text-sm bg-transparent border-b border-[var(--border)] text-right tabular-nums text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--text)] transition-colors py-0.5"
                       value={invoice.discountPercent || ''}
                       placeholder="0"
                       onChange={e => set('discountPercent', e.target.value === '' ? undefined : Number(e.target.value))}
                     />
                   </div>
                   <div className="flex items-center gap-2">
-                    <label className="text-xs text-[var(--muted)] whitespace-nowrap">Tax %</label>
+                    <label className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] whitespace-nowrap">Tax %</label>
                     <input
                       type="number" min={0} max={100} step={0.1}
-                      className={`${inputCls} w-20 text-right tabular-nums`}
+                      className="w-14 text-sm bg-transparent border-b border-[var(--border)] text-right tabular-nums text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--text)] transition-colors py-0.5"
                       value={invoice.taxRate || ''}
                       placeholder="0"
                       onChange={e => set('taxRate', e.target.value === '' ? undefined : Number(e.target.value))}
                     />
                   </div>
                 </div>
-                <div className="flex items-end justify-between">
-                  <span className="text-xs text-[var(--muted)]">{invoice.lineItems.length} item{invoice.lineItems.length !== 1 ? 's' : ''}</span>
-                  <div className="text-right space-y-0.5">
-                    {(invoice.discountPercent || invoice.taxRate) ? (
-                      <>
+                <div className="text-right space-y-1 flex-shrink-0">
+                  {(invoice.discountPercent || invoice.taxRate) ? (
+                    <>
+                      <div className="flex justify-between gap-8 text-xs text-[var(--muted)]">
+                        <span>Subtotal</span>
+                        <span className="tabular-nums">{formatCurrency(subtotal, invoice.currency)}</span>
+                      </div>
+                      {(invoice.discountPercent || 0) > 0 && (
                         <div className="flex justify-between gap-8 text-xs text-[var(--muted)]">
-                          <span>Subtotal</span>
-                          <span className="tabular-nums">{formatCurrency(subtotal, invoice.currency)}</span>
+                          <span>Discount ({invoice.discountPercent}%)</span>
+                          <span className="tabular-nums text-green-500">-{formatCurrency(subtotal * (invoice.discountPercent || 0) / 100, invoice.currency)}</span>
                         </div>
-                        {(invoice.discountPercent || 0) > 0 && (
-                          <div className="flex justify-between gap-8 text-xs text-[var(--muted)]">
-                            <span>Discount ({invoice.discountPercent}%)</span>
-                            <span className="tabular-nums text-green-500">-{formatCurrency(subtotal * (invoice.discountPercent || 0) / 100, invoice.currency)}</span>
-                          </div>
-                        )}
-                        {(invoice.taxRate || 0) > 0 && (
-                          <div className="flex justify-between gap-8 text-xs text-[var(--muted)]">
-                            <span>Tax ({invoice.taxRate}%)</span>
-                            <span className="tabular-nums">{formatCurrency((subtotal - subtotal * (invoice.discountPercent || 0) / 100) * (invoice.taxRate || 0) / 100, invoice.currency)}</span>
-                          </div>
-                        )}
-                      </>
-                    ) : null}
-                    <div>
-                      <p className="text-[11px] text-[var(--muted)] mb-0.5">Total due</p>
-                      <p className="text-2xl font-semibold tabular-nums tracking-tight">{formatCurrency(total, invoice.currency)}</p>
-                    </div>
+                      )}
+                      {(invoice.taxRate || 0) > 0 && (
+                        <div className="flex justify-between gap-8 text-xs text-[var(--muted)]">
+                          <span>Tax ({invoice.taxRate}%)</span>
+                          <span className="tabular-nums">{formatCurrency((subtotal - subtotal * (invoice.discountPercent || 0) / 100) * (invoice.taxRate || 0) / 100, invoice.currency)}</span>
+                        </div>
+                      )}
+                    </>
+                  ) : null}
+                  <div className="pt-1">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] mb-0.5">Total due</p>
+                    <p className="text-3xl font-bold tabular-nums tracking-tight">{formatCurrency(total, invoice.currency)}</p>
                   </div>
                 </div>
               </div>
+              <p className="text-[11px] text-[var(--muted)] mt-3">{invoice.lineItems.length} item{invoice.lineItems.length !== 1 ? 's' : ''}</p>
             </div>
           </div>
 
           {/* Payment */}
-          <div>
+          <div className="bg-[var(--surface)] rounded-xl p-5">
             <SectionLabel>Payment</SectionLabel>
             {(data.paymentMethods || []).length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mb-3">
+              <div className="flex flex-wrap gap-1.5 mb-5">
                 {(data.paymentMethods || []).map(m => (
                   <button
                     key={m.id}
@@ -485,10 +554,10 @@ export function InvoiceEditor({
                       bankDetails: m.type === 'bank' ? m.bankDetails : undefined,
                       updatedAt: new Date().toISOString()
                     })}
-                    className={`px-2.5 py-1 text-xs rounded-md border transition-colors ${
+                    className={`px-3 py-1.5 text-xs rounded-full border transition-all ${
                       invoice.paymentMethod === m.name
                         ? 'bg-[var(--text)] text-[var(--bg)] border-[var(--text)]'
-                        : 'border-[var(--border)] text-[var(--muted)] hover:border-[var(--muted)] hover:text-[var(--text)]'
+                        : 'border-[var(--border)] text-[var(--muted)] hover:border-[var(--text)] hover:text-[var(--text)]'
                     }`}
                   >
                     {m.name}
@@ -496,7 +565,7 @@ export function InvoiceEditor({
                 ))}
               </div>
             )}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Input label="Method" value={invoice.paymentMethod} onChange={e => onChange({ ...invoice, paymentMethod: e.target.value, bankDetails: undefined, updatedAt: new Date().toISOString() })} placeholder="PayPal, Bank Transfer…" />
               {!hasBankDetails(invoice.bankDetails) && (
                 <Input label="Details" value={invoice.paymentDetails} onChange={e => set('paymentDetails', e.target.value)} placeholder="Account number, email…" />
@@ -505,7 +574,7 @@ export function InvoiceEditor({
             {hasBankDetails(invoice.bankDetails) && (() => {
               const bd = invoice.bankDetails!
               return (
-              <div className="mt-3 rounded-md border border-[var(--border)] bg-[var(--surface)] divide-y divide-[var(--border)]">
+              <div className="mt-4 rounded-lg bg-[var(--bg)] divide-y divide-[var(--border)] overflow-hidden">
                 {([
                   ['Bank', bd.bankName],
                   ['Account name', bd.accountName],
@@ -513,7 +582,7 @@ export function InvoiceEditor({
                   ['SWIFT / BIC', bd.swiftCode],
                   ['Address', bd.address],
                 ] as [string, string][]).filter(([, v]) => v).map(([label, value]) => (
-                  <div key={label} className="flex items-center px-3 py-2 gap-3">
+                  <div key={label} className="flex items-center px-4 py-2.5 gap-4">
                     <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] w-24 flex-shrink-0">{label}</span>
                     <span className="text-xs text-[var(--text)] truncate">{value}</span>
                   </div>
@@ -524,24 +593,26 @@ export function InvoiceEditor({
           </div>
 
           {/* Notes */}
-          <div>
+          <div className="bg-[var(--surface)] rounded-xl p-5">
             <SectionLabel>Notes</SectionLabel>
             <textarea
-              className="w-full px-3 py-2 text-sm bg-transparent border border-[var(--border)] rounded-md text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] resize-none"
-              rows={3}
+              ref={notesRef}
+              className="w-full text-sm bg-transparent border-b border-transparent outline-none text-[var(--text)] placeholder:text-[var(--muted)] resize-none leading-relaxed hover:border-[var(--border)] focus:border-[var(--text)] transition-colors overflow-hidden"
+              rows={1}
               value={invoice.notes}
               onChange={e => set('notes', e.target.value)}
+              onInput={e => { const t = e.currentTarget; t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px' }}
               placeholder="Payment terms, thank you note…"
             />
           </div>
 
           {/* Payments — collapsed by default, expands when toggled or payments exist */}
           {(paymentsOpen || (invoice.payments || []).length > 0) ? (
-            <div>
+            <div className="bg-[var(--surface)] rounded-xl p-5">
               <div className="flex items-center justify-between mb-3">
                 <button
                   onClick={() => setPaymentsOpen(false)}
-                  className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] hover:text-[var(--text)] transition-colors"
+                  className="text-[11px] font-semibold uppercase tracking-widest text-[var(--muted)] hover:text-[var(--text)] transition-colors flex items-center gap-2 before:content-[''] before:block before:w-3 before:h-px before:bg-[var(--muted)] before:opacity-50"
                 >
                   Payments ↑
                 </button>
