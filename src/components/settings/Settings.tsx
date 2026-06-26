@@ -337,6 +337,7 @@ export function Settings({ data, onChange, onSave, onClose, prefillInvoice }: Se
                     className={`${inputCls} max-w-40`}
                     value={s.defaultDueDate}
                     onChange={e => set('defaultDueDate', e.target.value)}
+                    onBlur={onSave}
                   >
                     {DUE_DATE_PRESETS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
                   </select>

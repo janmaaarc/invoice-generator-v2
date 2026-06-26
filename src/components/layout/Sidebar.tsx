@@ -1,7 +1,7 @@
 import { Plus, Settings, Sun, Moon } from 'lucide-react'
 import { Button } from '../ui'
 
-export type Section = 'invoices' | 'clients' | 'templates' | 'payments' | 'recurring' | 'settings'
+export type Section = 'invoices'
 
 interface SidebarProps {
   onNewInvoice: () => void
