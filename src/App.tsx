@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react'
 import { Shell } from './components/layout/Shell'
 import { Sidebar, type Section } from './components/layout/Sidebar'
 import { InvoiceList } from './components/invoice/InvoiceList'
@@ -7,9 +7,16 @@ import { InvoicePreview } from './components/invoice/InvoicePreview'
 import { Settings } from './components/settings/Settings'
 import { Clients } from './components/clients/Clients'
 import { Templates } from './components/templates/Templates'
+import { PaymentMethods } from './components/payments/PaymentMethods'
+import { Recurring } from './components/recurring/Recurring'
+import { checkAndGenerateDue } from './lib/recurring'
+import { requestNotificationPermission, registerServiceWorker, showNotification, cacheRecurringSchedule } from './lib/notifications'
 import { useTheme } from './hooks/useTheme'
 import { loadAppData, saveAppData } from './storage'
-import { createNewInvoice, generateEmailShareLink, generateWhatsAppShareLink, sanitizeFilename } from './types'
+import {
+  createNewInvoice, generateEmailShareLink, generateWhatsAppShareLink,
+  buildPdfFilename,
+} from './types'
 import type { AppData, InvoiceData, InvoiceStatus } from './types'
 
 export default function App() {
@@ -18,9 +25,16 @@ export default function App() {
   const [data, setData] = useState<AppData>(() => loadAppData())
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [view, setView] = useState<'editor' | 'preview'>('editor')
+  const [mobilePanel, setMobilePanel] = useState<'list' | 'detail'>('list')
   const previewRef = useRef<HTMLDivElement>(null)
 
   const selectedInvoice = data.invoices.find(inv => inv.id === selectedId) ?? null
+
+  function handleSelectInvoice(id: string) {
+    setSelectedId(id)
+    setSection('invoices')
+    setMobilePanel('detail')
+  }
 
   function handleNewInvoice() {
     const invoice = createNewInvoice(data.settings)
@@ -33,6 +47,7 @@ export default function App() {
     saveAppData(nextData)
     setSelectedId(invoice.id)
     setSection('invoices')
+    setMobilePanel('detail')
   }
 
   function handleSave() {
@@ -47,9 +62,54 @@ export default function App() {
     setData(nextData)
   }
 
+  function handleDeleteInvoice(id: string) {
+    const nextData: AppData = { ...data, invoices: data.invoices.filter(inv => inv.id !== id) }
+    setData(nextData)
+    saveAppData(nextData)
+    if (selectedId === id) {
+      setSelectedId(nextData.invoices[0]?.id ?? null)
+      setMobilePanel('list')
+    }
+  }
+
   function handleStatusChange(status: InvoiceStatus) {
     if (!selectedInvoice) return
     handleChange({ ...selectedInvoice, status, updatedAt: new Date().toISOString() })
+  }
+
+  function handleMarkPaid() {
+    if (!selectedInvoice) return
+    const now = new Date().toISOString()
+    handleChange({ ...selectedInvoice, status: 'paid', paidDate: now, updatedAt: now })
+  }
+
+  function handleDuplicate(id: string) {
+    const original = data.invoices.find(inv => inv.id === id)
+    if (!original) return
+    const nextNum = data.settings.lastInvoiceNumber + 1
+    const now = new Date().toISOString()
+    const duplicate: InvoiceData = {
+      ...original,
+      id: crypto.randomUUID(),
+      invoiceNumber: `${data.settings.invoiceNumberPrefix}-${String(new Date().getFullYear())}-${String(nextNum).padStart(3, '0')}`,
+      status: 'draft',
+      createdAt: now,
+      updatedAt: now,
+      sentHistory: [],
+      payments: [],
+      paidDate: undefined,
+    }
+    const idx = data.invoices.findIndex(inv => inv.id === id)
+    const nextInvoices = [...data.invoices.slice(0, idx + 1), duplicate, ...data.invoices.slice(idx + 1)]
+    const nextData: AppData = {
+      ...data,
+      invoices: nextInvoices,
+      settings: { ...data.settings, lastInvoiceNumber: nextNum },
+    }
+    setData(nextData)
+    saveAppData(nextData)
+    setSelectedId(duplicate.id)
+    setMobilePanel('detail')
   }
 
   function handleShare(type: 'email' | 'whatsapp') {
@@ -58,12 +118,17 @@ export default function App() {
       ? generateEmailShareLink(selectedInvoice)
       : generateWhatsAppShareLink(selectedInvoice)
     window.open(link, '_blank')
+    const now = new Date().toISOString()
+    handleChange({
+      ...selectedInvoice,
+      sentHistory: [...(selectedInvoice.sentHistory || []), { date: now, method: type }],
+    })
   }
 
   async function handleDownloadPdf() {
     if (!selectedInvoice || !previewRef.current) return
     const html2pdf = (await import('html2pdf.js')).default
-    const filename = sanitizeFilename(`${selectedInvoice.invoiceNumber}-${selectedInvoice.toName || 'invoice'}`)
+    const filename = buildPdfFilename(selectedInvoice, data.settings.pdfFilenameTemplate)
     await html2pdf()
       .set({
         margin: 0,
@@ -74,6 +139,11 @@ export default function App() {
       })
       .from(previewRef.current)
       .save()
+    const now = new Date().toISOString()
+    handleChange({
+      ...selectedInvoice,
+      sentHistory: [...(selectedInvoice.sentHistory || []), { date: now, method: 'pdf' }],
+    })
   }
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -89,19 +159,38 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [handleKeyDown])
 
+  useEffect(() => {
+    registerServiceWorker()
+    requestNotificationPermission()
+    const { data: next, generated } = checkAndGenerateDue(data)
+    if (generated.length > 0) {
+      setData(next)
+      saveAppData(next)
+      showNotification('Recurring invoices generated', generated.join(', ') + ' — new drafts created')
+    }
+    cacheRecurringSchedule(data.recurringInvoices.filter(r => r.enabled).map(r => ({ name: r.name, nextDate: r.nextDate })))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   function renderMain() {
-    if (section === 'settings') return <Settings data={data} onChange={setData} onSave={handleSave} />
-    if (section === 'clients') return <Clients data={data} onChange={setData} onSave={handleSave} />
-    if (section === 'templates') return <Templates data={data} onChange={setData} onSave={handleSave} />
+    const sectionKey = section === 'invoices' ? `invoice-${selectedId}` : section
+    const wrap = (node: ReactNode) => (
+      <div key={sectionKey} className="animate-section flex flex-col h-full">{node}</div>
+    )
+    if (section === 'settings') return wrap(<Settings data={data} onChange={next => { setData(next); saveAppData(next) }} onSave={handleSave} />)
+    if (section === 'clients') return wrap(<Clients data={data} onChange={next => { setData(next); saveAppData(next) }} onSave={handleSave} />)
+    if (section === 'templates') return wrap(<Templates data={data} onChange={next => { setData(next); saveAppData(next) }} onSave={handleSave} />)
+    if (section === 'payments') return wrap(<PaymentMethods data={data} onChange={next => { setData(next); saveAppData(next) }} onSave={handleSave} />)
+    if (section === 'recurring') return wrap(<Recurring data={data} onChange={next => { setData(next); saveAppData(next); cacheRecurringSchedule(next.recurringInvoices.filter(r => r.enabled).map(r => ({ name: r.name, nextDate: r.nextDate }))) }} onSave={handleSave} />)
     if (!selectedInvoice) {
-      return (
+      return wrap(
         <div className="flex flex-col items-center justify-center h-full gap-2 text-[var(--muted)]">
           <p className="text-sm">No invoice selected</p>
           <p className="text-xs">Press <kbd className="px-1.5 py-0.5 text-[10px] border border-[var(--border)] rounded font-mono">N</kbd> to create one</p>
         </div>
       )
     }
-    return (
+    return wrap(
       <InvoiceEditor
         invoice={selectedInvoice}
         data={data}
@@ -110,6 +199,9 @@ export default function App() {
         onDownloadPdf={handleDownloadPdf}
         onShare={handleShare}
         onStatusChange={handleStatusChange}
+        onDuplicate={() => selectedId && handleDuplicate(selectedId)}
+        onMarkPaid={handleMarkPaid}
+        onBack={() => setMobilePanel('list')}
         view={view}
         onViewChange={setView}
       />
@@ -124,23 +216,26 @@ export default function App() {
         </div>
       )}
       <Shell
+        mobilePanel={mobilePanel}
         sidebar={
-        <Sidebar
-          section={section}
-          onSectionChange={setSection}
-          onNewInvoice={handleNewInvoice}
-          theme={theme}
-          onThemeToggle={toggle}
-        >
-          <InvoiceList
-            invoices={data.invoices}
-            selectedId={selectedId}
-            onSelect={id => { setSelectedId(id); setSection('invoices') }}
-          />
-        </Sidebar>
-      }
-      main={renderMain()}
-    />
+          <Sidebar
+            section={section}
+            onSectionChange={setSection}
+            onNewInvoice={handleNewInvoice}
+            theme={theme}
+            onThemeToggle={toggle}
+          >
+            <InvoiceList
+              invoices={data.invoices}
+              selectedId={selectedId}
+              onSelect={handleSelectInvoice}
+              onDelete={handleDeleteInvoice}
+              onDuplicate={handleDuplicate}
+            />
+          </Sidebar>
+        }
+        main={renderMain()}
+      />
     </>
   )
 }

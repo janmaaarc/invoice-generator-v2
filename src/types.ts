@@ -33,6 +33,11 @@ export interface InvoiceData {
   paidDate?: string;
   createdAt: string;
   updatedAt: string;
+
+  taxRate?: number;
+  discountPercent?: number;
+  sentHistory?: Array<{ date: string; method: 'email' | 'whatsapp' | 'pdf' }>;
+  payments?: Array<{ id: string; date: string; amount: number; note: string }>;
 }
 
 export interface SavedClient {
@@ -46,6 +51,12 @@ export interface SavedLineItem {
   id: string;
   description: string;
   rate: number;
+}
+
+export interface SavedPaymentMethod {
+  id: string;
+  name: string;
+  details: string;
 }
 
 export interface InvoiceTemplate {
@@ -64,13 +75,33 @@ export interface TermsTemplate {
 
 export type RecurringFrequency = 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly';
 
+export interface RecurringTemplate {
+  fromName: string;
+  fromEmail: string;
+  fromAddress: string;
+  toName: string;
+  toEmail: string;
+  toAddress: string;
+  lineItems: LineItem[];
+  paymentMethod: string;
+  paymentDetails: string;
+  notes: string;
+  currency: string;
+  dueDatePreset: string;
+  taxRate?: number;
+  discountPercent?: number;
+}
+
 export interface RecurringInvoice {
   id: string;
-  templateId: string;
-  clientId: string;
+  name: string;
   frequency: RecurringFrequency;
+  dayOfMonth: number;
   nextDate: string;
   enabled: boolean;
+  template: RecurringTemplate;
+  createdAt: string;
+  lastGeneratedAt?: string;
 }
 
 export interface AppSettings {
@@ -86,12 +117,14 @@ export interface AppSettings {
   invoiceNumberPrefix: string;
   defaultDueDate: string;
   showQrCode: boolean;
+  pdfFilenameTemplate?: string;
 }
 
 export interface AppData {
   invoices: InvoiceData[];
   clients: SavedClient[];
   lineItemTemplates: SavedLineItem[];
+  paymentMethods: SavedPaymentMethod[];
   invoiceTemplates: InvoiceTemplate[];
   termsTemplates: TermsTemplate[];
   recurringInvoices: RecurringInvoice[];
@@ -255,10 +288,33 @@ export function validateInvoice(invoice: InvoiceData): ValidationResult {
   };
 }
 
+export function getInvoiceSubtotal(invoice: InvoiceData): number {
+  return invoice.lineItems.reduce((sum, item) => sum + item.quantity * item.rate, 0);
+}
+
 export function getInvoiceTotal(invoice: InvoiceData): number {
-  return invoice.lineItems.reduce(
-    (sum, item) => sum + item.quantity * item.rate,
-    0
+  const subtotal = getInvoiceSubtotal(invoice);
+  const discount = subtotal * ((invoice.discountPercent || 0) / 100);
+  const afterDiscount = subtotal - discount;
+  const tax = afterDiscount * ((invoice.taxRate || 0) / 100);
+  return afterDiscount + tax;
+}
+
+export function getInvoicePaidAmount(invoice: InvoiceData): number {
+  return (invoice.payments || []).reduce((sum, p) => sum + p.amount, 0);
+}
+
+export function getInvoiceBalance(invoice: InvoiceData): number {
+  return getInvoiceTotal(invoice) - getInvoicePaidAmount(invoice);
+}
+
+export function buildPdfFilename(invoice: InvoiceData, template?: string): string {
+  const tmpl = template || '{number}-{client}';
+  return sanitizeFilename(
+    tmpl
+      .replace('{number}', invoice.invoiceNumber)
+      .replace('{client}', invoice.toName || 'invoice')
+      .replace('{date}', invoice.invoiceDate)
   );
 }
 

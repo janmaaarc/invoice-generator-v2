@@ -1,7 +1,7 @@
-import { Plus, Users, FileText, Settings, Sun, Moon } from 'lucide-react'
+import { Plus, Users, FileText, Settings, Sun, Moon, CreditCard, RefreshCw } from 'lucide-react'
 import { Button } from '../ui'
 
-export type Section = 'invoices' | 'clients' | 'templates' | 'settings'
+export type Section = 'invoices' | 'clients' | 'templates' | 'payments' | 'recurring' | 'settings'
 
 interface SidebarProps {
   section: Section
@@ -10,6 +10,7 @@ interface SidebarProps {
   theme: 'light' | 'dark'
   onThemeToggle: () => void
   children: React.ReactNode
+  onBack?: () => void
 }
 
 function NavItem({ icon: Icon, label, active, onClick }: {
@@ -20,8 +21,8 @@ function NavItem({ icon: Icon, label, active, onClick }: {
       onClick={onClick}
       className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors ${
         active
-          ? 'bg-[var(--surface)] text-[var(--text)] font-medium'
-          : 'text-[var(--muted)] hover:bg-[var(--surface)] hover:text-[var(--text)]'
+          ? 'bg-[var(--bg)] text-[var(--text)] font-medium'
+          : 'text-[var(--muted)] hover:bg-[var(--bg)] hover:text-[var(--text)]'
       }`}
     >
       <Icon size={15} />
@@ -45,7 +46,7 @@ export function Sidebar({ section, onSectionChange, onNewInvoice, theme, onTheme
       </div>
 
       <div className="px-3 pt-3 pb-2">
-        <Button variant="outline" className="w-full justify-start" onClick={onNewInvoice}>
+        <Button className="w-full justify-start" onClick={onNewInvoice}>
           <Plus size={14} />
           New Invoice
         </Button>
@@ -58,6 +59,8 @@ export function Sidebar({ section, onSectionChange, onNewInvoice, theme, onTheme
       <div className="border-t border-[var(--border)] px-3 py-3 space-y-0.5">
         <NavItem icon={Users} label="Clients" active={section === 'clients'} onClick={() => onSectionChange('clients')} />
         <NavItem icon={FileText} label="Templates" active={section === 'templates'} onClick={() => onSectionChange('templates')} />
+        <NavItem icon={CreditCard} label="Payments" active={section === 'payments'} onClick={() => onSectionChange('payments')} />
+        <NavItem icon={RefreshCw} label="Recurring" active={section === 'recurring'} onClick={() => onSectionChange('recurring')} />
         <NavItem icon={Settings} label="Settings" active={section === 'settings'} onClick={() => onSectionChange('settings')} />
       </div>
     </div>

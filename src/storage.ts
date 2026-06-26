@@ -1,4 +1,4 @@
-import type { AppData, InvoiceData, SavedClient, SavedLineItem, AppSettings, InvoiceTemplate, TermsTemplate, RecurringInvoice } from './types';
+import type { AppData, InvoiceData, SavedClient, SavedLineItem, SavedPaymentMethod, AppSettings, InvoiceTemplate, TermsTemplate, RecurringInvoice } from './types';
 import { DEFAULT_SETTINGS } from './types';
 
 const STORAGE_KEY = 'invoice-generator-data';
@@ -8,6 +8,7 @@ function getDefaultAppData(): AppData {
     invoices: [],
     clients: [],
     lineItemTemplates: [],
+    paymentMethods: [],
     invoiceTemplates: [],
     termsTemplates: [],
     recurringInvoices: [],
@@ -28,6 +29,7 @@ export function loadAppData(): AppData {
       invoices: parsed.invoices || [],
       clients: parsed.clients || [],
       lineItemTemplates: parsed.lineItemTemplates || [],
+      paymentMethods: parsed.paymentMethods || [],
       invoiceTemplates: parsed.invoiceTemplates || [],
       termsTemplates: parsed.termsTemplates || [],
       recurringInvoices: parsed.recurringInvoices || [],
@@ -241,6 +243,7 @@ export function importDataFromJson(jsonString: string): AppData | null {
       invoices: parsed.invoices || [],
       clients: parsed.clients || [],
       lineItemTemplates: parsed.lineItemTemplates || [],
+      paymentMethods: parsed.paymentMethods || [],
       invoiceTemplates: parsed.invoiceTemplates || [],
       termsTemplates: parsed.termsTemplates || [],
       recurringInvoices: parsed.recurringInvoices || [],
