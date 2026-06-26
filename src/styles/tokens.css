@@ -1,0 +1,33 @@
+:root {
+  --bg: #ffffff;
+  --surface: #f4f4f5;
+  --border: #e4e4e7;
+  --text: #09090b;
+  --muted: #71717a;
+  --accent: #18181b;
+  --accent-fg: #fafafa;
+
+  --badge-draft-bg: #f4f4f5;
+  --badge-draft-text: #71717a;
+  --badge-sent-bg: #eff6ff;
+  --badge-sent-text: #1d4ed8;
+  --badge-paid-bg: #f0fdf4;
+  --badge-paid-text: #15803d;
+}
+
+.dark {
+  --bg: #09090b;
+  --surface: #18181b;
+  --border: #27272a;
+  --text: #fafafa;
+  --muted: #a1a1aa;
+  --accent: #fafafa;
+  --accent-fg: #09090b;
+
+  --badge-draft-bg: #27272a;
+  --badge-draft-text: #a1a1aa;
+  --badge-sent-bg: #1e3a5f;
+  --badge-sent-text: #93c5fd;
+  --badge-paid-bg: #14532d;
+  --badge-paid-text: #86efac;
+}
