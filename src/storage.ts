@@ -1,4 +1,4 @@
-import type { AppData, InvoiceData, SavedClient, SavedLineItem, SavedPaymentMethod, AppSettings, InvoiceTemplate, TermsTemplate, RecurringInvoice } from './types';
+import type { AppData, InvoiceData, SavedClient, SavedLineItem, AppSettings, InvoiceTemplate, TermsTemplate, RecurringInvoice } from './types';
 import { DEFAULT_SETTINGS } from './types';
 
 const STORAGE_KEY = 'invoice-generator-data';

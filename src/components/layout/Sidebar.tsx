@@ -1,16 +1,14 @@
-import { Plus, Users, FileText, Settings, Sun, Moon, CreditCard, RefreshCw } from 'lucide-react'
+import { Plus, Settings, Sun, Moon } from 'lucide-react'
 import { Button } from '../ui'
 
 export type Section = 'invoices' | 'clients' | 'templates' | 'payments' | 'recurring' | 'settings'
 
 interface SidebarProps {
-  section: Section
-  onSectionChange: (s: Section) => void
   onNewInvoice: () => void
+  onSettingsOpen: () => void
   theme: 'light' | 'dark'
   onThemeToggle: () => void
   children: React.ReactNode
-  onBack?: () => void
 }
 
 function NavItem({ icon: Icon, label, active, onClick }: {
@@ -31,7 +29,7 @@ function NavItem({ icon: Icon, label, active, onClick }: {
   )
 }
 
-export function Sidebar({ section, onSectionChange, onNewInvoice, theme, onThemeToggle, children }: SidebarProps) {
+export function Sidebar({ onNewInvoice, onSettingsOpen, theme, onThemeToggle, children }: SidebarProps) {
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between px-4 py-4 border-b border-[var(--border)]">
@@ -56,12 +54,8 @@ export function Sidebar({ section, onSectionChange, onNewInvoice, theme, onTheme
         {children}
       </div>
 
-      <div className="border-t border-[var(--border)] px-3 py-3 space-y-0.5">
-        <NavItem icon={Users} label="Clients" active={section === 'clients'} onClick={() => onSectionChange('clients')} />
-        <NavItem icon={FileText} label="Templates" active={section === 'templates'} onClick={() => onSectionChange('templates')} />
-        <NavItem icon={CreditCard} label="Payments" active={section === 'payments'} onClick={() => onSectionChange('payments')} />
-        <NavItem icon={RefreshCw} label="Recurring" active={section === 'recurring'} onClick={() => onSectionChange('recurring')} />
-        <NavItem icon={Settings} label="Settings" active={section === 'settings'} onClick={() => onSectionChange('settings')} />
+      <div className="border-t border-[var(--border)] px-3 py-3">
+        <NavItem icon={Settings} label="Settings" active={false} onClick={onSettingsOpen} />
       </div>
     </div>
   )

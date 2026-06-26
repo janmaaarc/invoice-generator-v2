@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Trash2, RefreshCw, ToggleLeft, ToggleRight, ChevronDown, ChevronUp, Plus } from 'lucide-react'
 import type { AppData, RecurringInvoice, RecurringFrequency, RecurringTemplate } from '../../types'
 import { DUE_DATE_PRESETS } from '../../types'
-import { computeNextDate, initialNextDate } from '../../lib/recurring'
+import { initialNextDate } from '../../lib/recurring'
 
 interface RecurringProps {
   data: AppData

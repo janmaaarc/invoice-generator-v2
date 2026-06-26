@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { Download, Share2, Mail, MessageCircle, ChevronDown, ChevronLeft, ListPlus, Trash2, Copy, Users } from 'lucide-react'
-import { Button, Input, DatePicker } from '../ui'
+import { Download, Share2, Mail, MessageCircle, ChevronDown, ChevronLeft, ListPlus, Trash2, Users } from 'lucide-react'
+import { Input, DatePicker } from '../ui'
 import {
-  CURRENCIES, DUE_DATE_PRESETS, calculateDueDate,
+  CURRENCIES,
   formatCurrency, getInvoiceTotal, getInvoiceSubtotal, getInvoiceBalance,
 } from '../../types'
 import type { InvoiceData, AppData, InvoiceStatus, LineItem } from '../../types'
@@ -31,7 +31,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   )
 }
 
-function AddPaymentForm({ currency, onAdd }: { currency: string; onAdd: (amount: number, note: string, date: string) => void }) {
+function AddPaymentForm({ onAdd }: { currency: string; onAdd: (amount: number, note: string, date: string) => void }) {
   const [amount, setAmount] = useState('')
   const [note, setNote] = useState('')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
@@ -85,7 +85,7 @@ function AddPaymentForm({ currency, onAdd }: { currency: string; onAdd: (amount:
 
 export function InvoiceEditor({
   invoice, data, onChange, onSave, onDownloadPdf, onShare, onStatusChange,
-  onDuplicate, onMarkPaid, onBack, view, onViewChange,
+  onBack, view, onViewChange,
 }: InvoiceEditorProps) {
   const [shareOpen, setShareOpen] = useState(false)
   const [clientPickerOpen, setClientPickerOpen] = useState(false)

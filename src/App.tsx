@@ -5,10 +5,6 @@ import { InvoiceList } from './components/invoice/InvoiceList'
 import { InvoiceEditor } from './components/invoice/InvoiceEditor'
 import { InvoicePreview } from './components/invoice/InvoicePreview'
 import { Settings } from './components/settings/Settings'
-import { Clients } from './components/clients/Clients'
-import { Templates } from './components/templates/Templates'
-import { PaymentMethods } from './components/payments/PaymentMethods'
-import { Recurring } from './components/recurring/Recurring'
 import { checkAndGenerateDue } from './lib/recurring'
 import { requestNotificationPermission, registerServiceWorker, showNotification, cacheRecurringSchedule } from './lib/notifications'
 import { useTheme } from './hooks/useTheme'
@@ -27,14 +23,10 @@ export default function App() {
   const [view, setView] = useState<'editor' | 'preview'>('editor')
   const [mobilePanel, setMobilePanel] = useState<'list' | 'detail'>('list')
   const [recurringPrefill, setRecurringPrefill] = useState<InvoiceData | undefined>(undefined)
+  const [showSettings, setShowSettings] = useState(false)
   const previewRef = useRef<HTMLDivElement>(null)
 
   const selectedInvoice = data.invoices.find(inv => inv.id === selectedId) ?? null
-
-  function handleSectionChange(s: typeof section) {
-    if (s !== 'recurring') setRecurringPrefill(undefined)
-    setSection(s)
-  }
 
   function handleSelectInvoice(id: string) {
     setSelectedId(id)
@@ -93,7 +85,7 @@ export default function App() {
     const invoice = data.invoices.find(inv => inv.id === id)
     if (!invoice) return
     setRecurringPrefill(invoice)
-    handleSectionChange('recurring')
+    setShowSettings(true)
   }
 
   function handleDuplicate(id: string) {
@@ -190,11 +182,6 @@ export default function App() {
     const wrap = (node: ReactNode) => (
       <div key={sectionKey} className="animate-section flex flex-col h-full">{node}</div>
     )
-    if (section === 'settings') return wrap(<Settings data={data} onChange={next => { setData(next); saveAppData(next) }} onSave={handleSave} />)
-    if (section === 'clients') return wrap(<Clients data={data} onChange={next => { setData(next); saveAppData(next) }} onSave={handleSave} />)
-    if (section === 'templates') return wrap(<Templates data={data} onChange={next => { setData(next); saveAppData(next) }} onSave={handleSave} />)
-    if (section === 'payments') return wrap(<PaymentMethods data={data} onChange={next => { setData(next); saveAppData(next) }} onSave={handleSave} />)
-    if (section === 'recurring') return wrap(<Recurring data={data} onChange={next => { setData(next); saveAppData(next); cacheRecurringSchedule(next.recurringInvoices.filter(r => r.enabled).map(r => ({ name: r.name, nextDate: r.nextDate }))) }} onSave={handleSave} prefillInvoice={recurringPrefill} />)
     if (!selectedInvoice) {
       return wrap(
         <div className="flex flex-col items-center justify-center h-full gap-2 text-[var(--muted)]">
@@ -232,9 +219,8 @@ export default function App() {
         mobilePanel={mobilePanel}
         sidebar={
           <Sidebar
-            section={section}
-            onSectionChange={handleSectionChange}
             onNewInvoice={handleNewInvoice}
+            onSettingsOpen={() => setShowSettings(true)}
             theme={theme}
             onThemeToggle={toggle}
           >
@@ -250,6 +236,22 @@ export default function App() {
         }
         main={renderMain()}
       />
+      {showSettings && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+          onClick={e => { if (e.target === e.currentTarget) { setShowSettings(false); setRecurringPrefill(undefined) } }}
+        >
+          <div className="w-full max-w-3xl h-[80vh] max-h-[700px] bg-[var(--bg)] border border-[var(--border)] rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+            <Settings
+              data={data}
+              onChange={next => { setData(next); saveAppData(next) }}
+              onSave={handleSave}
+              onClose={() => { setShowSettings(false); setRecurringPrefill(undefined) }}
+              prefillInvoice={recurringPrefill}
+            />
+          </div>
+        </div>
+      )}
     </>
   )
 }
