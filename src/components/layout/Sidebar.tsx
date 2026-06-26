@@ -33,7 +33,7 @@ export function Sidebar({ onNewInvoice, onSettingsOpen, theme, onThemeToggle, ch
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between px-4 py-4 border-b border-[var(--border)]">
-        <span className="text-sm font-semibold tracking-tight">Invoice</span>
+        <span className="text-sm font-semibold tracking-tight">Invoix</span>
         <button
           onClick={onThemeToggle}
           className="p-1.5 rounded-md text-[var(--muted)] hover:bg-[var(--surface)] hover:text-[var(--text)] transition-colors"

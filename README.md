@@ -1,4 +1,4 @@
-# Invoiceberg
+# Invoix
 
 Create, send, and track professional invoices - right in your browser. No account. No subscription. No data leaves your device.
 
