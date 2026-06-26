@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Trash2, RefreshCw, ToggleLeft, ToggleRight, ChevronDown, ChevronUp, Plus } from 'lucide-react'
 import type { AppData, RecurringInvoice, RecurringFrequency, RecurringTemplate } from '../../types'
 import { DUE_DATE_PRESETS } from '../../types'
@@ -8,6 +8,7 @@ interface RecurringProps {
   data: AppData
   onChange: (data: AppData) => void
   onSave: () => void
+  prefillInvoice?: import('../../types').InvoiceData
 }
 
 const FREQUENCIES: { value: RecurringFrequency; label: string }[] = [
@@ -38,15 +39,33 @@ function emptyTemplate(data: AppData): RecurringTemplate {
   }
 }
 
-function RecurringForm({ data, onAdd, onCancel }: {
+function RecurringForm({ data, onAdd, onCancel, prefill }: {
   data: AppData
   onAdd: (r: RecurringInvoice) => void
   onCancel: () => void
+  prefill?: import('../../types').InvoiceData
 }) {
-  const [name, setName] = useState('')
+  const [name, setName] = useState(prefill?.toName ? `${prefill.toName} recurring` : '')
   const [frequency, setFrequency] = useState<RecurringFrequency>('monthly')
   const [dayOfMonth, setDayOfMonth] = useState(1)
-  const [template, setTemplate] = useState<RecurringTemplate>(() => emptyTemplate(data))
+  const [template, setTemplate] = useState<RecurringTemplate>(() =>
+    prefill ? {
+      fromName: prefill.fromName,
+      fromEmail: prefill.fromEmail,
+      fromAddress: prefill.fromAddress,
+      toName: prefill.toName,
+      toEmail: prefill.toEmail,
+      toAddress: prefill.toAddress,
+      lineItems: prefill.lineItems.map(item => ({ ...item, id: crypto.randomUUID() })),
+      paymentMethod: prefill.paymentMethod,
+      paymentDetails: prefill.paymentDetails,
+      notes: prefill.notes,
+      currency: prefill.currency,
+      dueDatePreset: data.settings.defaultDueDate || 'Upon receipt',
+      taxRate: prefill.taxRate,
+      discountPercent: prefill.discountPercent,
+    } : emptyTemplate(data)
+  )
 
   function setT<K extends keyof RecurringTemplate>(key: K, value: RecurringTemplate[K]) {
     setTemplate(t => ({ ...t, [key]: value }))
@@ -242,8 +261,12 @@ function RecurringCard({ r, onToggle, onDelete }: {
   )
 }
 
-export function Recurring({ data, onChange, onSave }: RecurringProps) {
-  const [showForm, setShowForm] = useState(false)
+export function Recurring({ data, onChange, onSave, prefillInvoice }: RecurringProps) {
+  const [showForm, setShowForm] = useState(!!prefillInvoice)
+
+  useEffect(() => {
+    if (prefillInvoice) setShowForm(true)
+  }, [prefillInvoice])
 
   function addRecurring(r: RecurringInvoice) {
     onChange({ ...data, recurringInvoices: [...data.recurringInvoices, r] })
@@ -291,7 +314,7 @@ export function Recurring({ data, onChange, onSave }: RecurringProps) {
         <div className="max-w-lg mx-auto px-6 py-6 space-y-4">
 
           {showForm && (
-            <RecurringForm data={data} onAdd={addRecurring} onCancel={() => setShowForm(false)} />
+            <RecurringForm data={data} onAdd={addRecurring} onCancel={() => setShowForm(false)} prefill={prefillInvoice} />
           )}
 
           {data.recurringInvoices.length > 0 ? (

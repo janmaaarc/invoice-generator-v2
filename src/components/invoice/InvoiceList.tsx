@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { MoreVertical, Trash2, Copy } from 'lucide-react'
+import { MoreVertical, Trash2, Copy, RefreshCw } from 'lucide-react'
 import { formatCurrency, getInvoiceTotal } from '../../types'
 import type { InvoiceData } from '../../types'
 import { Badge } from '../ui'
@@ -10,9 +10,10 @@ interface InvoiceListProps {
   onSelect: (id: string) => void
   onDelete: (id: string) => void
   onDuplicate: (id: string) => void
+  onMakeRecurring: (id: string) => void
 }
 
-function RowMenu({ id, onDelete, onDuplicate }: { id: string; onDelete: (id: string) => void; onDuplicate: (id: string) => void }) {
+function RowMenu({ id, onDelete, onDuplicate, onMakeRecurring }: { id: string; onDelete: (id: string) => void; onDuplicate: (id: string) => void; onMakeRecurring: (id: string) => void }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -43,6 +44,12 @@ function RowMenu({ id, onDelete, onDuplicate }: { id: string; onDelete: (id: str
             <Copy size={12} /> Duplicate
           </button>
           <button
+            onClick={e => { e.stopPropagation(); onMakeRecurring(id); setOpen(false) }}
+            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[var(--text)] hover:bg-[var(--surface)] transition-colors"
+          >
+            <RefreshCw size={12} /> Make recurring
+          </button>
+          <button
             onClick={e => { e.stopPropagation(); onDelete(id); setOpen(false) }}
             className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-500 hover:bg-red-500/10 transition-colors"
           >
@@ -54,7 +61,7 @@ function RowMenu({ id, onDelete, onDuplicate }: { id: string; onDelete: (id: str
   )
 }
 
-export function InvoiceList({ invoices, selectedId, onSelect, onDelete, onDuplicate }: InvoiceListProps) {
+export function InvoiceList({ invoices, selectedId, onSelect, onDelete, onDuplicate, onMakeRecurring }: InvoiceListProps) {
   if (invoices.length === 0) {
     return (
       <div className="px-3 py-6 text-center text-xs text-[var(--muted)]">
@@ -96,7 +103,7 @@ export function InvoiceList({ invoices, selectedId, onSelect, onDelete, onDuplic
             </div>
           </button>
           <div className="pr-1.5">
-            <RowMenu id={invoice.id} onDelete={onDelete} onDuplicate={onDuplicate} />
+            <RowMenu id={invoice.id} onDelete={onDelete} onDuplicate={onDuplicate} onMakeRecurring={onMakeRecurring} />
           </div>
         </div>
       ))}

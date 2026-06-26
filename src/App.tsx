@@ -26,9 +26,15 @@ export default function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [view, setView] = useState<'editor' | 'preview'>('editor')
   const [mobilePanel, setMobilePanel] = useState<'list' | 'detail'>('list')
+  const [recurringPrefill, setRecurringPrefill] = useState<InvoiceData | undefined>(undefined)
   const previewRef = useRef<HTMLDivElement>(null)
 
   const selectedInvoice = data.invoices.find(inv => inv.id === selectedId) ?? null
+
+  function handleSectionChange(s: typeof section) {
+    if (s !== 'recurring') setRecurringPrefill(undefined)
+    setSection(s)
+  }
 
   function handleSelectInvoice(id: string) {
     setSelectedId(id)
@@ -81,6 +87,13 @@ export default function App() {
     if (!selectedInvoice) return
     const now = new Date().toISOString()
     handleChange({ ...selectedInvoice, status: 'paid', paidDate: now, updatedAt: now })
+  }
+
+  function handleMakeRecurring(id: string) {
+    const invoice = data.invoices.find(inv => inv.id === id)
+    if (!invoice) return
+    setRecurringPrefill(invoice)
+    handleSectionChange('recurring')
   }
 
   function handleDuplicate(id: string) {
@@ -181,7 +194,7 @@ export default function App() {
     if (section === 'clients') return wrap(<Clients data={data} onChange={next => { setData(next); saveAppData(next) }} onSave={handleSave} />)
     if (section === 'templates') return wrap(<Templates data={data} onChange={next => { setData(next); saveAppData(next) }} onSave={handleSave} />)
     if (section === 'payments') return wrap(<PaymentMethods data={data} onChange={next => { setData(next); saveAppData(next) }} onSave={handleSave} />)
-    if (section === 'recurring') return wrap(<Recurring data={data} onChange={next => { setData(next); saveAppData(next); cacheRecurringSchedule(next.recurringInvoices.filter(r => r.enabled).map(r => ({ name: r.name, nextDate: r.nextDate }))) }} onSave={handleSave} />)
+    if (section === 'recurring') return wrap(<Recurring data={data} onChange={next => { setData(next); saveAppData(next); cacheRecurringSchedule(next.recurringInvoices.filter(r => r.enabled).map(r => ({ name: r.name, nextDate: r.nextDate }))) }} onSave={handleSave} prefillInvoice={recurringPrefill} />)
     if (!selectedInvoice) {
       return wrap(
         <div className="flex flex-col items-center justify-center h-full gap-2 text-[var(--muted)]">
@@ -220,7 +233,7 @@ export default function App() {
         sidebar={
           <Sidebar
             section={section}
-            onSectionChange={setSection}
+            onSectionChange={handleSectionChange}
             onNewInvoice={handleNewInvoice}
             theme={theme}
             onThemeToggle={toggle}
@@ -231,6 +244,7 @@ export default function App() {
               onSelect={handleSelectInvoice}
               onDelete={handleDeleteInvoice}
               onDuplicate={handleDuplicate}
+              onMakeRecurring={handleMakeRecurring}
             />
           </Sidebar>
         }
