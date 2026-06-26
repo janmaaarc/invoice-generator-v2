@@ -66,6 +66,8 @@ export interface SavedPaymentMethod {
   id: string;
   name: string;
   details: string;
+  type?: 'simple' | 'bank';
+  bankDetails?: BankDetails;
 }
 
 export interface InvoiceTemplate {

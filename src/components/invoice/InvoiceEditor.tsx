@@ -480,7 +480,13 @@ export function InvoiceEditor({
                 {(data.paymentMethods || []).map(m => (
                   <button
                     key={m.id}
-                    onClick={() => onChange({ ...invoice, paymentMethod: m.name, paymentDetails: m.details, bankDetails: undefined, updatedAt: new Date().toISOString() })}
+                    onClick={() => onChange({
+                      ...invoice,
+                      paymentMethod: m.name,
+                      paymentDetails: m.type === 'bank' ? '' : m.details,
+                      bankDetails: m.type === 'bank' ? m.bankDetails : undefined,
+                      updatedAt: new Date().toISOString()
+                    })}
                     className={`px-2.5 py-1 text-xs rounded-md border transition-colors ${
                       invoice.paymentMethod === m.name
                         ? 'bg-[var(--text)] text-[var(--bg)] border-[var(--text)]'
