@@ -493,69 +493,93 @@ export function Settings({ data, onChange, onSave, onClose, prefillInvoice }: Se
 
             {tab === 'payments' && (
               <>
-                <SectionTitle>Payments</SectionTitle>
-                <p className="text-xs text-[var(--muted)] mb-6">Save payment methods to pick per invoice.</p>
+                {/* Quick-pick methods */}
+                <div className="mb-8">
+                  <div className="flex items-baseline justify-between mb-3">
+                    <p className="text-sm font-medium text-[var(--text)]">Quick-pick</p>
+                    <p className="text-[11px] text-[var(--muted)]">shown as buttons per invoice</p>
+                  </div>
 
-                <Row label="Method name">
-                  <input className={`${inputCls} max-w-56`} value={paymentDraft.name} onChange={e => setPaymentDraft(d => ({ ...d, name: e.target.value }))} placeholder="PayPal, GCash, Bank..." onKeyDown={e => e.key === 'Enter' && addPayment()} />
-                </Row>
-                <Row label="Details">
-                  <input className={`${inputCls} max-w-56`} value={paymentDraft.details} onChange={e => setPaymentDraft(d => ({ ...d, details: e.target.value }))} placeholder="Account number, email..." onKeyDown={e => e.key === 'Enter' && addPayment()} />
-                </Row>
+                  <div className="flex gap-2 mb-3">
+                    <input
+                      className={`${inputCls} flex-1 min-w-0`}
+                      value={paymentDraft.name}
+                      onChange={e => setPaymentDraft(d => ({ ...d, name: e.target.value }))}
+                      placeholder="Name — PayPal, GCash…"
+                      onKeyDown={e => e.key === 'Enter' && addPayment()}
+                    />
+                    <input
+                      className={`${inputCls} flex-1 min-w-0`}
+                      value={paymentDraft.details}
+                      onChange={e => setPaymentDraft(d => ({ ...d, details: e.target.value }))}
+                      placeholder="Details — account, link…"
+                      onKeyDown={e => e.key === 'Enter' && addPayment()}
+                    />
+                    <button
+                      onClick={addPayment}
+                      disabled={!paymentDraft.name.trim()}
+                      className="flex-shrink-0 flex items-center gap-1 px-3 py-2 text-xs font-medium bg-[var(--text)] text-[var(--bg)] rounded-md disabled:opacity-30 hover:opacity-80 transition-opacity"
+                    >
+                      <Plus size={12} /> Add
+                    </button>
+                  </div>
 
-                <div className="flex justify-end pt-2 pb-6 border-b border-[var(--border)]">
-                  <button onClick={addPayment} disabled={!paymentDraft.name.trim()} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[var(--text)] text-[var(--bg)] rounded-md disabled:opacity-30 hover:opacity-80 transition-opacity">
-                    <Plus size={12} /> Add method
-                  </button>
+                  {data.paymentMethods.length > 0 ? (
+                    <div className="space-y-1">
+                      {data.paymentMethods.map(m => (
+                        <div key={m.id} className="group flex items-center justify-between px-3 py-2.5 rounded-md bg-[var(--surface)] border border-[var(--border)]">
+                          <div className="min-w-0 flex items-center gap-3">
+                            <span className="text-sm font-medium text-[var(--text)] flex-shrink-0">{m.name}</span>
+                            {m.details && <span className="text-xs text-[var(--muted)] truncate">{m.details}</span>}
+                          </div>
+                          <button onClick={() => removePayment(m.id)} className="opacity-0 group-hover:opacity-100 flex-shrink-0 ml-3 p-1 text-[var(--muted)] hover:text-red-500 rounded transition-all">
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center h-14 rounded-md border border-dashed border-[var(--border)]">
+                      <p className="text-[11px] text-[var(--muted)] opacity-50">No methods yet</p>
+                    </div>
+                  )}
                 </div>
 
-                {data.paymentMethods.length > 0 ? (
-                  <div className="mt-4 space-y-0">
-                    {data.paymentMethods.map(m => (
-                      <div key={m.id} className="flex items-center justify-between py-3 border-b border-[var(--border)] last:border-0">
-                        <div className="min-w-0">
-                          <p className="text-sm text-[var(--text)]">{m.name}</p>
-                          {m.details && <p className="text-xs text-[var(--muted)] truncate mt-0.5">{m.details}</p>}
-                        </div>
-                        <button onClick={() => removePayment(m.id)} className="p-1.5 text-[var(--muted)] hover:text-red-500 hover:bg-red-500/10 rounded-md transition-colors flex-shrink-0 ml-4">
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-[var(--muted)] text-center py-8 opacity-60">No payment methods saved yet</p>
-                )}
-
-                <div className="mt-8 pt-6 border-t border-[var(--border)]">
-                  <div className="flex items-center justify-between mb-4">
+                {/* Bank / SWIFT */}
+                <div className="pt-6 border-t border-[var(--border)]">
+                  <div className="flex items-start justify-between mb-4">
                     <div>
                       <p className="text-sm font-medium text-[var(--text)]">Bank / SWIFT Transfer</p>
-                      <p className="text-xs text-[var(--muted)] mt-0.5">Appears on invoices as structured bank details.</p>
+                      <p className="text-[11px] text-[var(--muted)] mt-0.5">Renders as structured payment block on invoices</p>
                     </div>
                     {hasBankDetails(s.defaultBankDetails) && (
-                      <button onClick={clearBankDetails} className="text-[11px] text-[var(--muted)] hover:text-red-500 transition-colors">Clear</button>
+                      <div className="flex items-center gap-2.5 flex-shrink-0 ml-4">
+                        <span className="text-[10px] font-semibold tracking-widest uppercase px-1.5 py-0.5 rounded bg-green-500/10 text-green-500">Active</span>
+                        <button onClick={clearBankDetails} className="text-[11px] text-[var(--muted)] hover:text-red-500 transition-colors">Clear</button>
+                      </div>
                     )}
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <p className="text-[11px] text-[var(--muted)] mb-1">Bank name</p>
-                      <input className={inputCls} value={s.defaultBankDetails?.bankName ?? ''} onChange={e => setBankDetail('bankName', e.target.value)} placeholder="e.g. Chase Bank" onBlur={onSave} />
+                  <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] mb-1.5">Bank name</p>
+                        <input className={inputCls} value={s.defaultBankDetails?.bankName ?? ''} onChange={e => setBankDetail('bankName', e.target.value)} placeholder="e.g. Chase Bank" onBlur={onSave} />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] mb-1.5">Account name</p>
+                        <input className={inputCls} value={s.defaultBankDetails?.accountName ?? ''} onChange={e => setBankDetail('accountName', e.target.value)} placeholder="e.g. John Doe" onBlur={onSave} />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] mb-1.5">Account number</p>
+                        <input className={inputCls} value={s.defaultBankDetails?.accountNumber ?? ''} onChange={e => setBankDetail('accountNumber', e.target.value)} placeholder="e.g. 1234567890" onBlur={onSave} />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] mb-1.5">SWIFT / BIC</p>
+                        <input className={inputCls} value={s.defaultBankDetails?.swiftCode ?? ''} onChange={e => setBankDetail('swiftCode', e.target.value)} placeholder="e.g. CHASUS33" onBlur={onSave} />
+                      </div>
                     </div>
                     <div>
-                      <p className="text-[11px] text-[var(--muted)] mb-1">Account name</p>
-                      <input className={inputCls} value={s.defaultBankDetails?.accountName ?? ''} onChange={e => setBankDetail('accountName', e.target.value)} placeholder="e.g. John Doe" onBlur={onSave} />
-                    </div>
-                    <div>
-                      <p className="text-[11px] text-[var(--muted)] mb-1">Account number</p>
-                      <input className={inputCls} value={s.defaultBankDetails?.accountNumber ?? ''} onChange={e => setBankDetail('accountNumber', e.target.value)} placeholder="e.g. 1234567890" onBlur={onSave} />
-                    </div>
-                    <div>
-                      <p className="text-[11px] text-[var(--muted)] mb-1">SWIFT / BIC</p>
-                      <input className={inputCls} value={s.defaultBankDetails?.swiftCode ?? ''} onChange={e => setBankDetail('swiftCode', e.target.value)} placeholder="e.g. CHASUS33" onBlur={onSave} />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <p className="text-[11px] text-[var(--muted)] mb-1">Address</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] mb-1.5">Address</p>
                       <input className={inputCls} value={s.defaultBankDetails?.address ?? ''} onChange={e => setBankDetail('address', e.target.value)} placeholder="e.g. 123 Main St, New York, NY 10001" onBlur={onSave} />
                     </div>
                   </div>
