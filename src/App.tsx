@@ -52,12 +52,16 @@ export default function App() {
     saveAppData(data)
   }
 
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   function handleChange(invoice: InvoiceData) {
     const nextData: AppData = {
       ...data,
       invoices: data.invoices.map(inv => inv.id === invoice.id ? invoice : inv),
     }
     setData(nextData)
+    if (saveTimer.current) clearTimeout(saveTimer.current)
+    saveTimer.current = setTimeout(() => saveAppData(nextData), 800)
   }
 
   function handleDeleteInvoice(id: string) {
