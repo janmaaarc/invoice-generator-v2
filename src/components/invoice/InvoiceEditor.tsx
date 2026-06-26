@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { Download, Share2, Mail, MessageCircle, ChevronDown, ChevronLeft, ListPlus, Trash2, Users } from 'lucide-react'
 import { Input, DatePicker } from '../ui'
 import {
@@ -90,18 +90,23 @@ export function InvoiceEditor({
   const [clientPickerOpen, setClientPickerOpen] = useState(false)
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false)
   const [paymentsOpen, setPaymentsOpen] = useState(false)
-  const previewContainerRef = useRef<HTMLDivElement>(null)
-  const [previewScale, setPreviewScale] = useState<number | null>(null)
+  const observerRef = useRef<ResizeObserver | null>(null)
+  const mountedRef = useRef(true)
+  const [previewScale, setPreviewScale] = useState(0.75)
 
-  useEffect(() => {
-    const el = previewContainerRef.current
+  useEffect(() => () => { mountedRef.current = false }, [])
+
+  const previewContainerRef = useCallback((el: HTMLDivElement | null) => {
+    observerRef.current?.disconnect()
+    observerRef.current = null
     if (!el) return
     const obs = new ResizeObserver(([entry]) => {
+      if (!mountedRef.current) return
       const available = entry.contentRect.width - 32
       setPreviewScale(Math.min(0.75, available / 794))
     })
     obs.observe(el)
-    return () => obs.disconnect()
+    observerRef.current = obs
   }, [])
 
   function set<K extends keyof InvoiceData>(key: K, value: InvoiceData[K]) {
@@ -142,16 +147,14 @@ export function InvoiceEditor({
   return (
     <div className="flex flex-col h-full">
       {/* Action bar */}
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 md:px-6 py-3 border-b border-[var(--border)]">
-        {/* Mobile back button */}
-        {onBack && (
-          <button onClick={onBack} className="md:hidden p-1.5 -ml-1.5 text-[var(--muted)] hover:text-[var(--text)]">
-            <ChevronLeft size={18} />
-          </button>
-        )}
-
-        {/* Left: invoice identity */}
-        <div className="flex items-center gap-2 min-w-0">
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 md:gap-3 px-3 md:px-6 py-2.5 md:py-3 border-b border-[var(--border)]">
+        {/* Left: back + invoice identity */}
+        <div className="flex items-center gap-1.5 md:gap-2 min-w-0">
+          {onBack && (
+            <button onClick={onBack} className="md:hidden flex-shrink-0 p-1 -ml-1 text-[var(--muted)] hover:text-[var(--text)]">
+              <ChevronLeft size={18} />
+            </button>
+          )}
           <input
             value={invoice.invoiceNumber}
             onChange={e => set('invoiceNumber', e.target.value)}
@@ -230,13 +233,11 @@ export function InvoiceEditor({
       {/* Main content */}
       {view === 'preview' ? (
         <div ref={previewContainerRef} className="flex-1 overflow-auto bg-[var(--surface)] py-8">
-          {previewScale !== null && (
-            <div style={{ width: Math.round(794 * previewScale), minHeight: Math.round(1123 * previewScale), margin: '0 auto' }}>
-              <div style={{ transform: `scale(${previewScale})`, transformOrigin: 'top left' }}>
-                <InvoicePreview invoice={invoice} settings={data.settings} />
-              </div>
+          <div style={{ width: Math.round(794 * previewScale), minHeight: Math.round(1123 * previewScale), margin: '0 auto' }}>
+            <div style={{ transform: `scale(${previewScale})`, transformOrigin: 'top left' }}>
+              <InvoicePreview invoice={invoice} settings={data.settings} />
             </div>
-          )}
+          </div>
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto"><div className="max-w-3xl mx-auto px-4 md:px-6 py-6 space-y-8">
