@@ -509,22 +509,6 @@ export function InvoiceEditor({
             />
           </div>
 
-          {/* Activity */}
-          {invoice.sentHistory && invoice.sentHistory.length > 0 && (
-            <div>
-              <SectionLabel>Activity</SectionLabel>
-              <div className="space-y-1">
-                {invoice.sentHistory.slice().reverse().map((h, i) => (
-                  <div key={i} className="flex items-center gap-2 text-xs text-[var(--muted)]">
-                    <span className="capitalize">{h.method === 'pdf' ? 'Downloaded PDF' : `Shared via ${h.method}`}</span>
-                    <span>·</span>
-                    <span>{new Date(h.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Payments — collapsed by default, expands when toggled or payments exist */}
           {(paymentsOpen || (invoice.payments || []).length > 0) ? (
             <div>
