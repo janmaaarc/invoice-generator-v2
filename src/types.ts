@@ -127,6 +127,7 @@ export interface AppSettings {
   defaultDueDate: string;
   showQrCode: boolean;
   pdfFilenameTemplate?: string;
+  defaultBankDetails?: BankDetails;
 }
 
 export interface AppData {
@@ -209,6 +210,7 @@ export function createNewInvoice(settings: AppSettings): InvoiceData {
 
     paymentMethod: settings.defaultPaymentMethod,
     paymentDetails: settings.defaultPaymentDetails,
+    bankDetails: settings.defaultBankDetails,
     notes: '',
     currency: 'USD',
 

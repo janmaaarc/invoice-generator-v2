@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from 'react'
 import { Upload, X, User, Hash, Palette, Database, Users, RefreshCw, Check, Plus, Trash2, CreditCard, Layers, ToggleLeft, ToggleRight } from 'lucide-react'
-import { DEFAULT_SETTINGS, ACCENT_COLORS, DUE_DATE_PRESETS, formatCurrency } from '../../types'
-import type { AppData, InvoiceData, SavedClient, SavedPaymentMethod, SavedLineItem, RecurringInvoice, RecurringFrequency, RecurringTemplate } from '../../types'
+import { DEFAULT_SETTINGS, ACCENT_COLORS, DUE_DATE_PRESETS, formatCurrency, hasBankDetails } from '../../types'
+import type { AppData, InvoiceData, SavedClient, SavedPaymentMethod, SavedLineItem, RecurringInvoice, RecurringFrequency, RecurringTemplate, BankDetails } from '../../types'
 import { exportDataAsJson, importDataFromJson } from '../../storage'
 import { initialNextDate } from '../../lib/recurring'
 
@@ -185,6 +185,16 @@ export function Settings({ data, onChange, onSave, onClose, prefillInvoice }: Se
     onChange({ ...data, settings: { ...s, [key]: value } })
   }
 
+  function setBankDetail(field: keyof BankDetails, value: string) {
+    const updated: BankDetails = { bankName: '', accountName: '', accountNumber: '', swiftCode: '', address: '', ...s.defaultBankDetails, [field]: value }
+    onChange({ ...data, settings: { ...s, defaultBankDetails: updated } })
+  }
+
+  function clearBankDetails() {
+    onChange({ ...data, settings: { ...s, defaultBankDetails: undefined } })
+    onSave()
+  }
+
   function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -344,12 +354,45 @@ export function Settings({ data, onChange, onSave, onClose, prefillInvoice }: Se
                 </Row>
 
                 <Row label="Payment method">
-                  <input className={`${inputCls} max-w-56`} value={s.defaultPaymentMethod} onChange={e => set('defaultPaymentMethod', e.target.value)} placeholder="PayPal, GCash..." onBlur={onSave} />
+                  <input className={`${inputCls} max-w-56`} value={s.defaultPaymentMethod} onChange={e => set('defaultPaymentMethod', e.target.value)} placeholder="PayPal, GCash, Bank Transfer…" onBlur={onSave} />
                 </Row>
 
-                <Row label="Payment details">
-                  <input className={`${inputCls} max-w-56`} value={s.defaultPaymentDetails} onChange={e => set('defaultPaymentDetails', e.target.value)} placeholder="Account number, link..." onBlur={onSave} />
-                </Row>
+                {!hasBankDetails(s.defaultBankDetails) && (
+                  <Row label="Payment details">
+                    <input className={`${inputCls} max-w-56`} value={s.defaultPaymentDetails} onChange={e => set('defaultPaymentDetails', e.target.value)} placeholder="Account number, link…" onBlur={onSave} />
+                  </Row>
+                )}
+
+                <div className="py-2">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-[var(--muted)]">Bank / SWIFT Details</p>
+                    {hasBankDetails(s.defaultBankDetails) && (
+                      <button onClick={clearBankDetails} className="text-[11px] text-[var(--muted)] hover:text-red-500 transition-colors">Clear</button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-[11px] text-[var(--muted)] mb-1">Bank name</p>
+                      <input className={inputCls} value={s.defaultBankDetails?.bankName ?? ''} onChange={e => setBankDetail('bankName', e.target.value)} placeholder="e.g. Chase Bank" onBlur={onSave} />
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-[var(--muted)] mb-1">Account name</p>
+                      <input className={inputCls} value={s.defaultBankDetails?.accountName ?? ''} onChange={e => setBankDetail('accountName', e.target.value)} placeholder="e.g. John Doe" onBlur={onSave} />
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-[var(--muted)] mb-1">Account number</p>
+                      <input className={inputCls} value={s.defaultBankDetails?.accountNumber ?? ''} onChange={e => setBankDetail('accountNumber', e.target.value)} placeholder="e.g. 1234567890" onBlur={onSave} />
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-[var(--muted)] mb-1">SWIFT / BIC</p>
+                      <input className={inputCls} value={s.defaultBankDetails?.swiftCode ?? ''} onChange={e => setBankDetail('swiftCode', e.target.value)} placeholder="e.g. CHASUS33" onBlur={onSave} />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <p className="text-[11px] text-[var(--muted)] mb-1">Address</p>
+                      <input className={inputCls} value={s.defaultBankDetails?.address ?? ''} onChange={e => setBankDetail('address', e.target.value)} placeholder="e.g. 123 Main St, New York, NY 10001" onBlur={onSave} />
+                    </div>
+                  </div>
+                </div>
 
                 <Row label="QR code" hint="Show QR on invoice">
                   <button

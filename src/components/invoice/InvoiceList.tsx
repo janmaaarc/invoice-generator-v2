@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { MoreVertical, Trash2, Copy, RefreshCw } from 'lucide-react'
 import { formatCurrency, getInvoiceTotal } from '../../types'
 import type { InvoiceData } from '../../types'
@@ -15,28 +16,47 @@ interface InvoiceListProps {
 
 function RowMenu({ id, onDelete, onDuplicate, onMakeRecurring }: { id: string; onDelete: (id: string) => void; onDuplicate: (id: string) => void; onMakeRecurring: (id: string) => void }) {
   const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
+  const [pos, setPos] = useState({ top: 0, right: 0 })
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!open) return
     function onDown(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+      if (
+        menuRef.current && !menuRef.current.contains(e.target as Node) &&
+        buttonRef.current && !buttonRef.current.contains(e.target as Node)
+      ) setOpen(false)
     }
     document.addEventListener('mousedown', onDown)
     return () => document.removeEventListener('mousedown', onDown)
   }, [open])
 
+  function handleOpen(e: React.MouseEvent) {
+    e.stopPropagation()
+    if (buttonRef.current) {
+      const r = buttonRef.current.getBoundingClientRect()
+      setPos({ top: r.bottom + 4, right: window.innerWidth - r.right })
+    }
+    setOpen(o => !o)
+  }
+
   return (
-    <div ref={ref} className="relative flex-shrink-0">
+    <div className="flex-shrink-0">
       <button
-        onClick={e => { e.stopPropagation(); setOpen(o => !o) }}
+        ref={buttonRef}
+        onClick={handleOpen}
         className="p-1.5 rounded text-[var(--muted)] hover:text-[var(--text)] sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-[var(--surface)]"
         aria-label="More options"
       >
         <MoreVertical size={13} />
       </button>
-      {open && (
-        <div className="absolute right-0 top-full mt-1 z-20 bg-[var(--bg)] border border-[var(--border)] rounded-md shadow-[0_4px_12px_0_rgb(0,0,0,0.08)] py-1 min-w-32 animate-dropdown">
+      {open && createPortal(
+        <div
+          ref={menuRef}
+          style={{ position: 'fixed', top: pos.top, right: pos.right }}
+          className="z-50 bg-[var(--bg)] border border-[var(--border)] rounded-md shadow-[0_4px_12px_0_rgb(0,0,0,0.12)] py-1 min-w-32 animate-dropdown"
+        >
           <button
             onClick={e => { e.stopPropagation(); onDuplicate(id); setOpen(false) }}
             className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[var(--text)] hover:bg-[var(--surface)] transition-colors"
@@ -55,7 +75,8 @@ function RowMenu({ id, onDelete, onDuplicate, onMakeRecurring }: { id: string; o
           >
             <Trash2 size={12} /> Delete
           </button>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )

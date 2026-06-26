@@ -5,10 +5,8 @@ import {
   CURRENCIES,
   formatCurrency, getInvoiceTotal, getInvoiceSubtotal, getInvoiceBalance,
 } from '../../types'
-import type { InvoiceData, AppData, InvoiceStatus, LineItem, BankDetails } from '../../types'
+import type { InvoiceData, AppData, InvoiceStatus, LineItem } from '../../types'
 import { InvoicePreview } from './InvoicePreview'
-
-const BANK_METHOD_RE = /swift|bank.?transfer|wire/i
 
 interface InvoiceEditorProps {
   invoice: InvoiceData
@@ -141,13 +139,6 @@ export function InvoiceEditor({
     })
   }
 
-  function setBankDetail(field: keyof BankDetails, value: string) {
-    onChange({
-      ...invoice,
-      bankDetails: { bankName: '', accountName: '', accountNumber: '', swiftCode: '', address: '', ...invoice.bankDetails, [field]: value },
-      updatedAt: new Date().toISOString(),
-    })
-  }
 
   const total = getInvoiceTotal(invoice)
   const subtotal = getInvoiceSubtotal(invoice)
@@ -502,38 +493,9 @@ export function InvoiceEditor({
               </div>
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                label="Method"
-                value={invoice.paymentMethod}
-                onChange={e => {
-                  const method = e.target.value
-                  onChange({
-                    ...invoice,
-                    paymentMethod: method,
-                    bankDetails: BANK_METHOD_RE.test(method) ? invoice.bankDetails : undefined,
-                    updatedAt: new Date().toISOString(),
-                  })
-                }}
-                placeholder="PayPal, Bank Transfer, Swift…"
-              />
-              {!BANK_METHOD_RE.test(invoice.paymentMethod) && (
-                <Input label="Details" value={invoice.paymentDetails} onChange={e => set('paymentDetails', e.target.value)} placeholder="Account number, email…" />
-              )}
+              <Input label="Method" value={invoice.paymentMethod} onChange={e => set('paymentMethod', e.target.value)} placeholder="PayPal, Bank Transfer…" />
+              <Input label="Details" value={invoice.paymentDetails} onChange={e => set('paymentDetails', e.target.value)} placeholder="Account number, email…" />
             </div>
-            {BANK_METHOD_RE.test(invoice.paymentMethod) && (
-              <div className="mt-3 p-4 rounded-lg border border-[var(--border)] bg-[var(--surface)] space-y-3">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)]">Bank / SWIFT Details</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <Input label="Bank name" value={invoice.bankDetails?.bankName ?? ''} onChange={e => setBankDetail('bankName', e.target.value)} placeholder="GoTyme Bank" />
-                  <Input label="Account name" value={invoice.bankDetails?.accountName ?? ''} onChange={e => setBankDetail('accountName', e.target.value)} placeholder="Jan Marc Coloma" />
-                  <Input label="Account number" value={invoice.bankDetails?.accountNumber ?? ''} onChange={e => setBankDetail('accountNumber', e.target.value)} placeholder="010200478056" />
-                  <Input label="SWIFT / BIC" value={invoice.bankDetails?.swiftCode ?? ''} onChange={e => setBankDetail('swiftCode', e.target.value)} placeholder="GOTYPHM2XXX" />
-                  <div className="sm:col-span-2">
-                    <Input label="Address" value={invoice.bankDetails?.address ?? ''} onChange={e => setBankDetail('address', e.target.value)} placeholder="City, Country, Postcode" />
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Notes */}
