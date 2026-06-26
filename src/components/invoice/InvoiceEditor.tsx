@@ -6,6 +6,7 @@ import {
   formatCurrency, getInvoiceTotal, getInvoiceSubtotal, getInvoiceBalance,
 } from '../../types'
 import type { InvoiceData, AppData, InvoiceStatus, LineItem } from '../../types'
+import { hasBankDetails } from '../../types'
 import { InvoicePreview } from './InvoicePreview'
 
 interface InvoiceEditorProps {
@@ -500,8 +501,32 @@ export function InvoiceEditor({
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input label="Method" value={invoice.paymentMethod} onChange={e => set('paymentMethod', e.target.value)} placeholder="PayPal, Bank Transfer…" />
-              <Input label="Details" value={invoice.paymentDetails} onChange={e => set('paymentDetails', e.target.value)} placeholder="Account number, email…" />
+              {!hasBankDetails(invoice.bankDetails) && (
+                <Input label="Details" value={invoice.paymentDetails} onChange={e => set('paymentDetails', e.target.value)} placeholder="Account number, email…" />
+              )}
             </div>
+            {hasBankDetails(invoice.bankDetails) && (
+              <div className="mt-3 rounded-md border border-[var(--border)] bg-[var(--surface)] divide-y divide-[var(--border)]">
+                {([
+                  ['Bank', invoice.bankDetails!.bankName],
+                  ['Account name', invoice.bankDetails!.accountName],
+                  ['Account no.', invoice.bankDetails!.accountNumber],
+                  ['SWIFT / BIC', invoice.bankDetails!.swiftCode],
+                  ['Address', invoice.bankDetails!.address],
+                ] as [string, string][]).filter(([, v]) => v).map(([label, value]) => (
+                  <div key={label} className="flex items-center px-3 py-2 gap-3">
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] w-24 flex-shrink-0">{label}</span>
+                    <span className="text-xs text-[var(--text)] truncate">{value}</span>
+                  </div>
+                ))}
+                <button
+                  onClick={() => set('bankDetails', undefined)}
+                  className="w-full px-3 py-1.5 text-[11px] text-[var(--muted)] hover:text-red-500 text-left transition-colors"
+                >
+                  Remove bank details
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Notes */}
