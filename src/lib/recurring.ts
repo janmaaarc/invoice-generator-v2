@@ -34,6 +34,9 @@ function daysInMonth(year: number, month: number): number {
 }
 
 export function initialNextDate(frequency: RecurringFrequency, dayOfMonth: number): string {
+  if (frequency === 'weekly' || frequency === 'biweekly') {
+    return computeNextDate(frequency, dayOfMonth, new Date())
+  }
   const now = new Date()
   const d = new Date(now.getFullYear(), now.getMonth(), Math.min(dayOfMonth, daysInMonth(now.getFullYear(), now.getMonth())))
   if (d <= now) return computeNextDate(frequency, dayOfMonth, now)

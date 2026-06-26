@@ -134,18 +134,18 @@ export function Settings({ data, onChange, onSave, onClose, prefillInvoice }: Se
       setRecurringName(prefillInvoice.toName ? `${prefillInvoice.toName} recurring` : '')
       setRecurringFreq('monthly')
       setRecurringDay(1)
+      const defaultDueDate = data.settings.defaultDueDate || 'Upon receipt'
       setRecurringTemplate({
         fromName: prefillInvoice.fromName, fromEmail: prefillInvoice.fromEmail, fromAddress: prefillInvoice.fromAddress,
         toName: prefillInvoice.toName, toEmail: prefillInvoice.toEmail, toAddress: prefillInvoice.toAddress,
         lineItems: prefillInvoice.lineItems.map(i => ({ ...i, id: crypto.randomUUID() })),
         paymentMethod: prefillInvoice.paymentMethod, paymentDetails: prefillInvoice.paymentDetails,
         notes: prefillInvoice.notes, currency: prefillInvoice.currency,
-        dueDatePreset: s.defaultDueDate || 'Upon receipt',
+        dueDatePreset: defaultDueDate,
         taxRate: prefillInvoice.taxRate, discountPercent: prefillInvoice.discountPercent,
       })
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prefillInvoice])
+  }, [prefillInvoice, data.settings.defaultDueDate])
 
   function setRT<K extends keyof RecurringTemplate>(key: K, value: RecurringTemplate[K]) {
     setRecurringTemplate(t => ({ ...t, [key]: value }))

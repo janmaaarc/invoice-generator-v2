@@ -75,12 +75,6 @@ export default function App() {
     handleChange({ ...selectedInvoice, status, updatedAt: new Date().toISOString() })
   }
 
-  function handleMarkPaid() {
-    if (!selectedInvoice) return
-    const now = new Date().toISOString()
-    handleChange({ ...selectedInvoice, status: 'paid', paidDate: now, updatedAt: now })
-  }
-
   function handleMakeRecurring(id: string) {
     const invoice = data.invoices.find(inv => inv.id === id)
     if (!invoice) return
@@ -200,7 +194,6 @@ export default function App() {
         onShare={handleShare}
         onStatusChange={handleStatusChange}
         onDuplicate={() => selectedId && handleDuplicate(selectedId)}
-        onMarkPaid={handleMarkPaid}
         onBack={() => setMobilePanel('list')}
         view={view}
         onViewChange={setView}

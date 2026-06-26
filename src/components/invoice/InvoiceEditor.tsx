@@ -17,7 +17,6 @@ interface InvoiceEditorProps {
   onShare: (type: 'email' | 'whatsapp') => void
   onStatusChange: (status: InvoiceStatus) => void
   onDuplicate: () => void
-  onMarkPaid: () => void
   onBack?: () => void
   view: 'editor' | 'preview'
   onViewChange: (v: 'editor' | 'preview') => void
@@ -31,7 +30,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   )
 }
 
-function AddPaymentForm({ onAdd }: { currency: string; onAdd: (amount: number, note: string, date: string) => void }) {
+function AddPaymentForm({ onAdd }: { onAdd: (amount: number, note: string, date: string) => void }) {
   const [amount, setAmount] = useState('')
   const [note, setNote] = useState('')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
@@ -358,6 +357,9 @@ export function InvoiceEditor({
                 <span className="w-24 text-right">Rate</span>
                 <span className="w-5" />
               </div>
+              <datalist id="line-item-templates">
+                {data.lineItemTemplates.map(t => <option key={t.id} value={t.description} />)}
+              </datalist>
               {invoice.lineItems.map(item => (
                 <div key={item.id} className="group flex items-center gap-2">
                   <input
@@ -367,9 +369,6 @@ export function InvoiceEditor({
                     placeholder="Service or product"
                     list="line-item-templates"
                   />
-                  <datalist id="line-item-templates">
-                    {data.lineItemTemplates.map(t => <option key={t.id} value={t.description} />)}
-                  </datalist>
                   <input
                     type="number" min={0} step={1}
                     className={`${inputCls} w-20 text-right tabular-nums`}
@@ -542,7 +541,6 @@ export function InvoiceEditor({
                 </div>
               ))}
               <AddPaymentForm
-                currency={invoice.currency}
                 onAdd={(amount, note, date) => {
                   const payment = { id: crypto.randomUUID(), date, amount, note }
                   onChange({ ...invoice, payments: [...(invoice.payments || []), payment], updatedAt: new Date().toISOString() })

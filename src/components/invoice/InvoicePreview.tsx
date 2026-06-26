@@ -1,12 +1,14 @@
 import { forwardRef } from 'react'
-import { formatCurrency, getInvoiceTotal, getInvoiceSubtotal, CURRENCIES } from '../../types'
+import { formatCurrency, getInvoiceSubtotal, CURRENCIES } from '../../types'
 import type { InvoiceData, AppSettings } from '../../types'
 
-function TotalsBlock({ invoice, currency, accentColor, style }: {
+function TotalsBlock({ invoice, currency, accentColor, totalSize = 24, totalLabel = 'Total', totalBoxStyle }: {
   invoice: InvoiceData
   currency: { symbol: string }
   accentColor?: string
-  style?: React.CSSProperties
+  totalSize?: number
+  totalLabel?: string
+  totalBoxStyle?: React.CSSProperties
 }) {
   const subtotal = getInvoiceSubtotal(invoice)
   const discount = subtotal * ((invoice.discountPercent || 0) / 100)
@@ -17,7 +19,7 @@ function TotalsBlock({ invoice, currency, accentColor, style }: {
   const rowStyle = { display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }
 
   return (
-    <div style={{ textAlign: 'right', ...style }}>
+    <div style={{ textAlign: 'right' }}>
       {hasBreakdown && (
         <div style={{ marginBottom: 8 }}>
           <div style={rowStyle}>
@@ -38,8 +40,10 @@ function TotalsBlock({ invoice, currency, accentColor, style }: {
           )}
         </div>
       )}
-      <p style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.1em', color: '#a1a1aa', margin: '0 0 4px' }}>Total</p>
-      <p style={{ fontSize: 24, fontWeight: 700, margin: 0, color: accentColor || '#09090b' }}>{formatCurrency(total, invoice.currency)}</p>
+      <div style={totalBoxStyle}>
+        <p style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.1em', color: totalBoxStyle ? 'rgba(255,255,255,0.7)' : '#a1a1aa', margin: '0 0 4px' }}>{totalLabel}</p>
+        <p style={{ fontSize: totalSize, fontWeight: 700, margin: 0, color: totalBoxStyle ? '#fff' : (accentColor || '#09090b') }}>{formatCurrency(total, invoice.currency)}</p>
+      </div>
     </div>
   )
 }
@@ -138,11 +142,10 @@ function MinimalPreview({ invoice, settings, currency }: {
   )
 }
 
-function ClassicPreview({ invoice, settings, currency, total }: {
+function ClassicPreview({ invoice, settings, currency }: {
   invoice: InvoiceData
   settings: AppSettings
   currency: { symbol: string }
-  total: number
 }) {
   const accent = settings.accentColor || '#171717'
   return (
@@ -214,26 +217,12 @@ function ClassicPreview({ invoice, settings, currency, total }: {
 
         {/* Total box */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 48 }}>
-          <div>
-            {!!(invoice.discountPercent || invoice.taxRate) && (() => {
-              const subtotal = getInvoiceSubtotal(invoice)
-              const discount = subtotal * ((invoice.discountPercent || 0) / 100)
-              const afterDiscount = subtotal - discount
-              const tax = afterDiscount * ((invoice.taxRate || 0) / 100)
-              const rowStyle = { display: 'flex', justifyContent: 'space-between', gap: 32, fontSize: 13, marginBottom: 4 }
-              return (
-                <div style={{ textAlign: 'right', marginBottom: 12 }}>
-                  <div style={rowStyle}><span style={{ color: '#71717a' }}>Subtotal</span><span>{currency.symbol}{subtotal.toFixed(2)}</span></div>
-                  {!!invoice.discountPercent && <div style={rowStyle}><span style={{ color: '#71717a' }}>Discount ({invoice.discountPercent}%)</span><span style={{ color: '#71717a' }}>−{currency.symbol}{discount.toFixed(2)}</span></div>}
-                  {!!invoice.taxRate && <div style={rowStyle}><span style={{ color: '#71717a' }}>Tax ({invoice.taxRate}%)</span><span>{currency.symbol}{tax.toFixed(2)}</span></div>}
-                </div>
-              )
-            })()}
-            <div style={{ background: accent, color: '#fff', padding: '16px 24px', minWidth: 200, textAlign: 'right', borderRadius: 4 }}>
-              <p style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.7)', margin: '0 0 4px' }}>Total Due</p>
-              <p style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>{formatCurrency(total, invoice.currency)}</p>
-            </div>
-          </div>
+          <TotalsBlock
+            invoice={invoice}
+            currency={currency}
+            totalLabel="Total Due"
+            totalBoxStyle={{ background: accent, padding: '16px 24px', minWidth: 200, borderRadius: 4 }}
+          />
         </div>
 
         {(invoice.paymentMethod || invoice.paymentDetails) && (
@@ -255,11 +244,10 @@ function ClassicPreview({ invoice, settings, currency, total }: {
   )
 }
 
-function ModernPreview({ invoice, settings, currency, total }: {
+function ModernPreview({ invoice, settings, currency }: {
   invoice: InvoiceData
   settings: AppSettings
   currency: { symbol: string }
-  total: number
 }) {
   const accent = settings.accentColor || '#171717'
   return (
@@ -338,24 +326,7 @@ function ModernPreview({ invoice, settings, currency, total }: {
         {/* Total */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '32px 0 48px' }}>
           <div style={{ borderLeft: `4px solid ${accent}`, paddingLeft: 16 }}>
-            {!!(invoice.discountPercent || invoice.taxRate) && (() => {
-              const subtotal = getInvoiceSubtotal(invoice)
-              const discount = subtotal * ((invoice.discountPercent || 0) / 100)
-              const afterDiscount = subtotal - discount
-              const tax = afterDiscount * ((invoice.taxRate || 0) / 100)
-              const rowStyle = { display: 'flex', justifyContent: 'space-between', gap: 32, fontSize: 12, marginBottom: 3 }
-              return (
-                <div style={{ textAlign: 'right', marginBottom: 10 }}>
-                  <div style={rowStyle}><span style={{ color: '#71717a' }}>Subtotal</span><span>{currency.symbol}{subtotal.toFixed(2)}</span></div>
-                  {!!invoice.discountPercent && <div style={rowStyle}><span style={{ color: '#71717a' }}>Discount ({invoice.discountPercent}%)</span><span style={{ color: '#71717a' }}>−{currency.symbol}{discount.toFixed(2)}</span></div>}
-                  {!!invoice.taxRate && <div style={rowStyle}><span style={{ color: '#71717a' }}>Tax ({invoice.taxRate}%)</span><span>{currency.symbol}{tax.toFixed(2)}</span></div>}
-                </div>
-              )
-            })()}
-            <div style={{ textAlign: 'right' }}>
-              <p style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#a1a1aa', margin: '0 0 4px' }}>Total</p>
-              <p style={{ fontSize: 28, fontWeight: 800, margin: 0, color: '#09090b' }}>{formatCurrency(total, invoice.currency)}</p>
-            </div>
+            <TotalsBlock invoice={invoice} currency={currency} totalSize={28} accentColor="#09090b" />
           </div>
         </div>
 
@@ -380,9 +351,8 @@ function ModernPreview({ invoice, settings, currency, total }: {
 
 export const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(
   ({ invoice, settings }, ref) => {
-    const total = getInvoiceTotal(invoice)
     const currency = CURRENCIES.find(c => c.code === invoice.currency) ?? CURRENCIES[0]
-    const props = { invoice, settings, currency, total }
+    const props = { invoice, settings, currency }
 
     return (
       <div ref={ref}>
