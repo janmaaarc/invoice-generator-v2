@@ -35,7 +35,9 @@ export function Sidebar({ onNewInvoice, onSettingsOpen, theme, onThemeToggle, ch
       <div className="flex items-center justify-between px-4 py-4 border-b border-[var(--border)]">
         <div className="flex items-center gap-2">
           <img src="/logo.png" alt="Invoix" className="w-[18px] h-[18px] dark:invert" />
-          <span className="text-[15px] font-bold tracking-[-0.03em]">Invoix</span>
+          <span className="text-[15px] tracking-[-0.02em]">
+            <span className="font-medium text-[var(--text)]">Invo</span><span className="font-black text-[var(--text)]">ix</span>
+          </span>
         </div>
         <button
           onClick={onThemeToggle}
