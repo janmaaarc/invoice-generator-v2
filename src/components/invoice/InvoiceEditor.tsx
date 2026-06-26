@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Download, Share2, Mail, MessageCircle, ChevronDown, ChevronLeft, ListPlus, Trash2, Users } from 'lucide-react'
 import { Input, DatePicker } from '../ui'
 import {
@@ -90,6 +90,19 @@ export function InvoiceEditor({
   const [clientPickerOpen, setClientPickerOpen] = useState(false)
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false)
   const [paymentsOpen, setPaymentsOpen] = useState(false)
+  const previewContainerRef = useRef<HTMLDivElement>(null)
+  const [previewScale, setPreviewScale] = useState<number | null>(null)
+
+  useEffect(() => {
+    const el = previewContainerRef.current
+    if (!el) return
+    const obs = new ResizeObserver(([entry]) => {
+      const available = entry.contentRect.width - 32
+      setPreviewScale(Math.min(0.75, available / 794))
+    })
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
 
   function set<K extends keyof InvoiceData>(key: K, value: InvoiceData[K]) {
     onChange({ ...invoice, [key]: value, updatedAt: new Date().toISOString() })
@@ -216,12 +229,14 @@ export function InvoiceEditor({
 
       {/* Main content */}
       {view === 'preview' ? (
-        <div className="flex-1 overflow-auto bg-[var(--surface)] py-10">
-          <div style={{ width: Math.round(794 * 0.75), minHeight: Math.round(1123 * 0.75), margin: '0 auto' }}>
-            <div style={{ transform: 'scale(0.75)', transformOrigin: 'top left' }}>
-              <InvoicePreview invoice={invoice} settings={data.settings} />
+        <div ref={previewContainerRef} className="flex-1 overflow-auto bg-[var(--surface)] py-8">
+          {previewScale !== null && (
+            <div style={{ width: Math.round(794 * previewScale), minHeight: Math.round(1123 * previewScale), margin: '0 auto' }}>
+              <div style={{ transform: `scale(${previewScale})`, transformOrigin: 'top left' }}>
+                <InvoicePreview invoice={invoice} settings={data.settings} />
+              </div>
             </div>
-          </div>
+          )}
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto"><div className="max-w-3xl mx-auto px-4 md:px-6 py-6 space-y-8">
@@ -351,7 +366,7 @@ export function InvoiceEditor({
               )}
             </div>
             <div className="space-y-2">
-              <div className="flex items-center gap-2 text-[11px] text-[var(--muted)] px-1">
+              <div className="hidden sm:flex items-center gap-2 text-[11px] text-[var(--muted)] px-1">
                 <span className="flex-1">Description</span>
                 <span className="w-20 text-right">Qty</span>
                 <span className="w-24 text-right">Rate</span>
@@ -361,35 +376,37 @@ export function InvoiceEditor({
                 {data.lineItemTemplates.map(t => <option key={t.id} value={t.description} />)}
               </datalist>
               {invoice.lineItems.map(item => (
-                <div key={item.id} className="group flex items-center gap-2">
+                <div key={item.id} className="group flex flex-wrap sm:flex-nowrap items-center gap-2">
                   <input
-                    className={`${inputCls} flex-1`}
+                    className={`${inputCls} flex-1 min-w-0 w-full sm:w-auto`}
                     value={item.description}
                     onChange={e => setLineItem(item.id, 'description', e.target.value)}
                     placeholder="Service or product"
                     list="line-item-templates"
                   />
-                  <input
-                    type="number" min={0} step={1}
-                    className={`${inputCls} w-20 text-right tabular-nums`}
-                    value={item.quantity || ''}
-                    placeholder="1"
-                    onChange={e => setLineItem(item.id, 'quantity', e.target.value === '' ? 0 : Number(e.target.value))}
-                  />
-                  <input
-                    type="number" min={0} step={0.01}
-                    className={`${inputCls} w-24 text-right tabular-nums`}
-                    value={item.rate || ''}
-                    placeholder="0"
-                    onChange={e => setLineItem(item.id, 'rate', e.target.value === '' ? 0 : Number(e.target.value))}
-                  />
-                  <button
-                    onClick={() => removeLineItem(item.id)}
-                    className="w-5 flex-shrink-0 flex items-center justify-center text-[var(--muted)] hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                    aria-label="Remove"
-                  >
-                    <Trash2 size={13} />
-                  </button>
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <input
+                      type="number" min={0} step={1}
+                      className={`${inputCls} flex-1 sm:w-20 text-right tabular-nums`}
+                      value={item.quantity || ''}
+                      placeholder="Qty"
+                      onChange={e => setLineItem(item.id, 'quantity', e.target.value === '' ? 0 : Number(e.target.value))}
+                    />
+                    <input
+                      type="number" min={0} step={0.01}
+                      className={`${inputCls} flex-1 sm:w-24 text-right tabular-nums`}
+                      value={item.rate || ''}
+                      placeholder="Rate"
+                      onChange={e => setLineItem(item.id, 'rate', e.target.value === '' ? 0 : Number(e.target.value))}
+                    />
+                    <button
+                      onClick={() => removeLineItem(item.id)}
+                      className="flex-shrink-0 flex items-center justify-center p-2 -m-1 text-[var(--muted)] hover:text-red-500 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                      aria-label="Remove"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 </div>
               ))}
               <button onClick={addLineItem} className="text-xs text-[var(--muted)] hover:text-[var(--text)] transition-colors px-1 mt-1">

@@ -30,7 +30,7 @@ function RowMenu({ id, onDelete, onDuplicate, onMakeRecurring }: { id: string; o
     <div ref={ref} className="relative flex-shrink-0">
       <button
         onClick={e => { e.stopPropagation(); setOpen(o => !o) }}
-        className="p-1.5 rounded text-[var(--muted)] hover:text-[var(--text)] opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[var(--surface)]"
+        className="p-1.5 rounded text-[var(--muted)] hover:text-[var(--text)] sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-[var(--surface)]"
         aria-label="More options"
       >
         <MoreVertical size={13} />

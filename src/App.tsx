@@ -231,10 +231,10 @@ export default function App() {
       />
       {showSettings && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/40 backdrop-blur-sm"
           onClick={e => { if (e.target === e.currentTarget) { setShowSettings(false); setRecurringPrefill(undefined) } }}
         >
-          <div className="w-full max-w-3xl h-[80vh] max-h-[700px] bg-[var(--bg)] border border-[var(--border)] rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+          <div className="w-full max-w-3xl h-[92dvh] sm:h-[80vh] sm:max-h-[700px] bg-[var(--bg)] border-0 sm:border border-[var(--border)] rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col">
             <Settings
               data={data}
               onChange={next => { setData(next); saveAppData(next) }}
