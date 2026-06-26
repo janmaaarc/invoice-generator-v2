@@ -6,6 +6,7 @@ import {
   formatCurrency, getInvoiceTotal,
 } from '../../types'
 import type { InvoiceData, AppData, InvoiceStatus, LineItem } from '../../types'
+import { InvoicePreview } from './InvoicePreview'
 
 interface InvoiceEditorProps {
   invoice: InvoiceData
@@ -132,8 +133,8 @@ export function InvoiceEditor({
 
       {/* Main content */}
       {view === 'preview' ? (
-        <div className="flex-1 flex items-center justify-center text-[var(--muted)]">
-          <div>Preview coming in Task 6</div>
+        <div className="flex-1 overflow-auto bg-[var(--surface)] py-8">
+          <InvoicePreview invoice={invoice} settings={data.settings} />
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto px-6 py-6 space-y-8 max-w-2xl">

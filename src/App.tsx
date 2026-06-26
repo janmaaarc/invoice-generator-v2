@@ -1,11 +1,12 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Shell } from './components/layout/Shell'
 import { Sidebar, type Section } from './components/layout/Sidebar'
 import { InvoiceList } from './components/invoice/InvoiceList'
 import { InvoiceEditor } from './components/invoice/InvoiceEditor'
+import { InvoicePreview } from './components/invoice/InvoicePreview'
 import { useTheme } from './hooks/useTheme'
 import { loadAppData, saveAppData } from './storage'
-import { createNewInvoice, generateEmailShareLink, generateWhatsAppShareLink } from './types'
+import { createNewInvoice, generateEmailShareLink, generateWhatsAppShareLink, sanitizeFilename } from './types'
 import type { AppData, InvoiceData, InvoiceStatus } from './types'
 
 export default function App() {
@@ -14,6 +15,7 @@ export default function App() {
   const [data, setData] = useState<AppData>(() => loadAppData())
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [view, setView] = useState<'editor' | 'preview'>('editor')
+  const previewRef = useRef<HTMLDivElement>(null)
 
   const selectedInvoice = data.invoices.find(inv => inv.id === selectedId) ?? null
 
@@ -56,7 +58,19 @@ export default function App() {
   }
 
   async function handleDownloadPdf() {
-    alert('PDF coming in Task 6')
+    if (!selectedInvoice || !previewRef.current) return
+    const html2pdf = (await import('html2pdf.js')).default
+    const filename = sanitizeFilename(`${selectedInvoice.invoiceNumber}-${selectedInvoice.toName || 'invoice'}`)
+    await html2pdf()
+      .set({
+        margin: 0,
+        filename: `${filename}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'px', format: [794, 1123], orientation: 'portrait' },
+      })
+      .from(previewRef.current)
+      .save()
   }
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -73,8 +87,14 @@ export default function App() {
   }, [handleKeyDown])
 
   return (
-    <Shell
-      sidebar={
+    <>
+      {selectedInvoice && (
+        <div style={{ position: 'fixed', left: '-9999px', top: 0, zIndex: -1, pointerEvents: 'none' }}>
+          <InvoicePreview ref={previewRef} invoice={selectedInvoice} settings={data.settings} />
+        </div>
+      )}
+      <Shell
+        sidebar={
         <Sidebar
           section={section}
           onSectionChange={setSection}
@@ -114,5 +134,6 @@ export default function App() {
           )
       }
     />
+    </>
   )
 }
