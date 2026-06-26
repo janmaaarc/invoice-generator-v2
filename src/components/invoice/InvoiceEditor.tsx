@@ -500,19 +500,21 @@ export function InvoiceEditor({
               </div>
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input label="Method" value={invoice.paymentMethod} onChange={e => set('paymentMethod', e.target.value)} placeholder="PayPal, Bank Transfer…" />
+              <Input label="Method" value={invoice.paymentMethod} onChange={e => onChange({ ...invoice, paymentMethod: e.target.value, bankDetails: undefined, updatedAt: new Date().toISOString() })} placeholder="PayPal, Bank Transfer…" />
               {!hasBankDetails(invoice.bankDetails) && (
                 <Input label="Details" value={invoice.paymentDetails} onChange={e => set('paymentDetails', e.target.value)} placeholder="Account number, email…" />
               )}
             </div>
-            {hasBankDetails(invoice.bankDetails) && (
+            {hasBankDetails(invoice.bankDetails) && (() => {
+              const bd = invoice.bankDetails!
+              return (
               <div className="mt-3 rounded-md border border-[var(--border)] bg-[var(--surface)] divide-y divide-[var(--border)]">
                 {([
-                  ['Bank', invoice.bankDetails!.bankName],
-                  ['Account name', invoice.bankDetails!.accountName],
-                  ['Account no.', invoice.bankDetails!.accountNumber],
-                  ['SWIFT / BIC', invoice.bankDetails!.swiftCode],
-                  ['Address', invoice.bankDetails!.address],
+                  ['Bank', bd.bankName],
+                  ['Account name', bd.accountName],
+                  ['Account no.', bd.accountNumber],
+                  ['SWIFT / BIC', bd.swiftCode],
+                  ['Address', bd.address],
                 ] as [string, string][]).filter(([, v]) => v).map(([label, value]) => (
                   <div key={label} className="flex items-center px-3 py-2 gap-3">
                     <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] w-24 flex-shrink-0">{label}</span>
@@ -520,7 +522,8 @@ export function InvoiceEditor({
                   </div>
                 ))}
               </div>
-            )}
+              )
+            })()}
           </div>
 
           {/* Notes */}

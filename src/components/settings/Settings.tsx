@@ -5,6 +5,8 @@ import type { AppData, InvoiceData, SavedClient, SavedPaymentMethod, SavedLineIt
 import { exportDataAsJson, importDataFromJson } from '../../storage'
 import { initialNextDate } from '../../lib/recurring'
 
+const isBankType = (key: string): boolean => key === 'bank' || key === 'swift'
+
 interface SettingsProps {
   data: AppData
   onChange: (data: AppData) => void
@@ -71,10 +73,8 @@ export function Settings({ data, onChange, onSave, onClose, prefillInvoice }: Se
     onSave()
   }
 
-  const IS_BANK_TYPE = (key: string) => key === 'bank' || key === 'swift'
-
   function addPayment() {
-    const isBank = IS_BANK_TYPE(selectedPayType)
+    const isBank = isBankType(selectedPayType)
     if (!paymentDraft.name.trim()) return
     if (isBank && !hasBankDetails(draftBankDetails)) return
     const method: SavedPaymentMethod = isBank
