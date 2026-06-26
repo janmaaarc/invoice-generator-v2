@@ -47,7 +47,7 @@ function RowMenu({ id, onDelete, onDuplicate, onMakeRecurring }: { id: string; o
             onClick={e => { e.stopPropagation(); onMakeRecurring(id); setOpen(false) }}
             className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[var(--text)] hover:bg-[var(--surface)] transition-colors"
           >
-            <RefreshCw size={12} /> Make recurring
+            <RefreshCw size={12} /> Recurring
           </button>
           <button
             onClick={e => { e.stopPropagation(); onDelete(id); setOpen(false) }}
