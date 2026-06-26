@@ -233,21 +233,25 @@ export function exportDataAsJson(data: AppData): string {
 
 export function importDataFromJson(jsonString: string): AppData | null {
   try {
-    const parsed = JSON.parse(jsonString) as Partial<AppData>;
+    const parsed = JSON.parse(jsonString);
+    if (typeof parsed !== 'object' || parsed === null) return null;
 
-    if (!parsed.invoices && !parsed.clients && !parsed.settings) {
+    const isArray = (v: unknown) => Array.isArray(v);
+    const isObj = (v: unknown) => typeof v === 'object' && v !== null && !Array.isArray(v);
+
+    if (!isArray(parsed.invoices) && !isArray(parsed.clients) && !isObj(parsed.settings)) {
       return null;
     }
 
     return {
-      invoices: parsed.invoices || [],
-      clients: parsed.clients || [],
-      lineItemTemplates: parsed.lineItemTemplates || [],
-      paymentMethods: parsed.paymentMethods || [],
-      invoiceTemplates: parsed.invoiceTemplates || [],
-      termsTemplates: parsed.termsTemplates || [],
-      recurringInvoices: parsed.recurringInvoices || [],
-      settings: { ...DEFAULT_SETTINGS, ...parsed.settings },
+      invoices: isArray(parsed.invoices) ? parsed.invoices : [],
+      clients: isArray(parsed.clients) ? parsed.clients : [],
+      lineItemTemplates: isArray(parsed.lineItemTemplates) ? parsed.lineItemTemplates : [],
+      paymentMethods: isArray(parsed.paymentMethods) ? parsed.paymentMethods : [],
+      invoiceTemplates: isArray(parsed.invoiceTemplates) ? parsed.invoiceTemplates : [],
+      termsTemplates: isArray(parsed.termsTemplates) ? parsed.termsTemplates : [],
+      recurringInvoices: isArray(parsed.recurringInvoices) ? parsed.recurringInvoices : [],
+      settings: { ...DEFAULT_SETTINGS, ...(isObj(parsed.settings) ? parsed.settings : {}) },
     };
   } catch {
     return null;

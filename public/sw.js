@@ -21,9 +21,9 @@ async function handleRecurringCheck() {
   const today = new Date().toISOString().split('T')[0];
   const due = schedules.filter(s => s.nextDate <= today);
   if (due.length === 0) return;
-  const names = due.map(s => s.name).join(', ');
+  const names = due.map(s => String(s.name || '').replace(/[^\w\s,.-]/g, '').trim().slice(0, 50)).filter(Boolean).join(', ');
   await self.registration.showNotification('Recurring Invoice Due', {
-    body: `${names} — open the app to generate`,
+    body: `${names} - open the app to generate`,
     icon: '/icon.png',
     tag: 'recurring-invoice',
     data: { url: '/' },

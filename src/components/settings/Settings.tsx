@@ -37,6 +37,15 @@ export function Settings({ data, onChange, onSave }: SettingsProps) {
   function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file (JPG, PNG, GIF, WebP, etc.)')
+      return
+    }
+    const MAX_SIZE = 2 * 1024 * 1024
+    if (file.size > MAX_SIZE) {
+      alert('Logo must be smaller than 2 MB')
+      return
+    }
     const reader = new FileReader()
     reader.onload = ev => set('logo', ev.target?.result as string)
     reader.readAsDataURL(file)

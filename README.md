@@ -1,6 +1,6 @@
 # Invoiceberg
 
-Create, send, and track professional invoices — right in your browser. No account. No subscription. No data leaves your device.
+Create, send, and track professional invoices - right in your browser. No account. No subscription. No data leaves your device.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
@@ -9,22 +9,22 @@ Create, send, and track professional invoices — right in your browser. No acco
 ## What can it do?
 
 ### Create invoices in seconds
-Fill in your client's name, add what you're charging for, and your invoice is ready. You see the final result as you type — no surprises when you download it.
+Fill in your client's name, add what you're charging for, and your invoice is ready. You see the final result as you type - no surprises when you download it.
 
 ### Send your way
-- **Email** — opens your mail app with the invoice details already written
-- **WhatsApp** — sends a pre-filled message to your client
-- **PDF** — download a professional PDF to send however you like
-- **Image** — save as a PNG if you need to attach it somewhere
+- **Email** - opens your mail app with the invoice details already written
+- **WhatsApp** - sends a pre-filled message to your client
+- **PDF** - download a professional PDF to send however you like
+- **Image** - save as a PNG if you need to attach it somewhere
 
 ### Get paid faster
 Add your payment details (PayPal, GCash, bank account, etc.) once, then pick it with one click on every invoice. You can even add a QR code so clients can scan and pay instantly.
 
 ### Save your regulars
-Save your frequent clients so you don't retype their details every time. Same for your common services — save them as templates and drop them into any invoice.
+Save your frequent clients so you don't retype their details every time. Same for your common services - save them as templates and drop them into any invoice.
 
 ### Set and forget with recurring invoices
-Have a client you bill every month? Set up a recurring invoice once — pick the day, the amount, the payment terms — and the app creates a new draft invoice automatically when it's due. You'll get a notification so nothing slips through.
+Have a client you bill every month? Set up a recurring invoice once - pick the day, the amount, the payment terms - and the app creates a new draft invoice automatically when it's due. You'll get a notification so nothing slips through.
 
 ### Track what's paid
 Mark invoices as Draft, Sent, or Paid. Record partial payments if a client pays in installments. See exactly how much is still owed.
@@ -41,20 +41,20 @@ Everything is saved in your browser. Nothing is sent to any server. Export a bac
 
 ### First time setup (takes 2 minutes)
 1. Open the app and go to **Settings**
-2. Enter your name/business name, email, and address — these fill in automatically on every invoice
+2. Enter your name/business name, email, and address - these fill in automatically on every invoice
 3. Go to **Payments** and add your payment info (PayPal email, bank account, etc.)
 4. Optionally add your logo
 
 ### Creating an invoice
 1. Click **New Invoice**
 2. Type your client's name (or pick a saved one from Clients)
-3. Add what you're charging for — description, price, quantity
+3. Add what you're charging for - description, price, quantity
 4. Pick your payment method
 5. Hit **Download PDF** or share via email/WhatsApp
 
 ### Recurring invoices (auto-billing)
 1. Go to **Recurring** in the sidebar
-2. Click **New**, give it a name (e.g. "Monthly retainer — Acme Corp")
+2. Click **New**, give it a name (e.g. "Monthly retainer - Acme Corp")
 3. Fill in the client, services, and how often to bill
 4. The app creates a draft invoice automatically on the scheduled date
 
@@ -96,7 +96,7 @@ Everything is saved in your browser. Nothing is sent to any server. Export a bac
 **Stack:** React 19 · TypeScript · Tailwind CSS v4 · Vite · html2pdf.js · html2canvas · qrcode.react
 
 **Architecture:**
-- Pure client-side SPA — no backend, no auth, no network calls
+- Pure client-side SPA - no backend, no auth, no network calls
 - All state persisted to `localStorage` via `src/storage.ts`
 - Recurring invoice schedules mirrored to Cache API for service worker access
 - Service worker (`public/sw.js`) handles Periodic Background Sync + push notifications (Chrome Android only)
@@ -104,20 +104,20 @@ Everything is saved in your browser. Nothing is sent to any server. Export a bac
 **Key files:**
 ```
 src/
-├── types.ts              — All data types + pure utility functions
-├── storage.ts            — localStorage load/save/export/import
-├── App.tsx               — Root state, section routing
+├── types.ts              - All data types + pure utility functions
+├── storage.ts            - localStorage load/save/export/import
+├── App.tsx               - Root state, section routing
 ├── lib/
-│   ├── recurring.ts      — Schedule computation, invoice generation
-│   └── notifications.ts  — SW registration, notification permission
+│   ├── recurring.ts      - Schedule computation, invoice generation
+│   └── notifications.ts  - SW registration, notification permission
 ├── components/
-│   ├── invoice/          — Editor + list + preview
-│   ├── recurring/        — Recurring CRUD UI
-│   ├── payments/         — Payment methods CRUD
-│   ├── clients/          — Saved clients
-│   ├── templates/        — Line item templates
-│   └── settings/         — App settings
-└── index.css             — CSS custom properties (design tokens)
+│   ├── invoice/          - Editor + list + preview
+│   ├── recurring/        - Recurring CRUD UI
+│   ├── payments/         - Payment methods CRUD
+│   ├── clients/          - Saved clients
+│   ├── templates/        - Line item templates
+│   └── settings/         - App settings
+└── index.css             - CSS custom properties (design tokens)
 ```
 
 **Get started:**
@@ -129,7 +129,7 @@ npm run dev       # http://localhost:5173
 npm run build     # production build
 ```
 
-**Data model:** `AppData` in `src/types.ts` — invoices, clients, templates, payment methods, recurring invoices, settings. All serialized to one localStorage key.
+**Data model:** `AppData` in `src/types.ts` - invoices, clients, templates, payment methods, recurring invoices, settings. All serialized to one localStorage key.
 
 ---
 

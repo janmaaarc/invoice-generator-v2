@@ -338,13 +338,23 @@ export function encodeInvoiceForUrl(invoice: InvoiceData): string {
 export function decodeInvoiceFromUrl(encoded: string): InvoiceData | null {
   try {
     const json = decodeURIComponent(atob(encoded));
-    return JSON.parse(json) as InvoiceData;
+    const parsed = JSON.parse(json);
+    if (
+      typeof parsed !== 'object' || parsed === null ||
+      typeof parsed.id !== 'string' ||
+      typeof parsed.invoiceNumber !== 'string' ||
+      typeof parsed.fromName !== 'string' ||
+      typeof parsed.toName !== 'string' ||
+      !Array.isArray(parsed.lineItems)
+    ) return null;
+    return parsed as InvoiceData;
   } catch {
     return null;
   }
 }
 
 export function generateEmailShareLink(invoice: InvoiceData): string {
+  if (!isValidEmail(invoice.toEmail)) return '';
   const total = getInvoiceTotal(invoice);
   const currency = CURRENCIES.find(c => c.code === invoice.currency) || CURRENCIES[0];
   const subject = encodeURIComponent(`Invoice ${invoice.invoiceNumber}`);
