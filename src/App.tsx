@@ -4,6 +4,9 @@ import { Sidebar, type Section } from './components/layout/Sidebar'
 import { InvoiceList } from './components/invoice/InvoiceList'
 import { InvoiceEditor } from './components/invoice/InvoiceEditor'
 import { InvoicePreview } from './components/invoice/InvoicePreview'
+import { Settings } from './components/settings/Settings'
+import { Clients } from './components/clients/Clients'
+import { Templates } from './components/templates/Templates'
 import { useTheme } from './hooks/useTheme'
 import { loadAppData, saveAppData } from './storage'
 import { createNewInvoice, generateEmailShareLink, generateWhatsAppShareLink, sanitizeFilename } from './types'
@@ -86,6 +89,33 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [handleKeyDown])
 
+  function renderMain() {
+    if (section === 'settings') return <Settings data={data} onChange={setData} onSave={handleSave} />
+    if (section === 'clients') return <Clients data={data} onChange={setData} onSave={handleSave} />
+    if (section === 'templates') return <Templates data={data} onChange={setData} onSave={handleSave} />
+    if (!selectedInvoice) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full gap-2 text-[var(--muted)]">
+          <p className="text-sm">No invoice selected</p>
+          <p className="text-xs">Press <kbd className="px-1.5 py-0.5 text-[10px] border border-[var(--border)] rounded font-mono">N</kbd> to create one</p>
+        </div>
+      )
+    }
+    return (
+      <InvoiceEditor
+        invoice={selectedInvoice}
+        data={data}
+        onChange={handleChange}
+        onSave={handleSave}
+        onDownloadPdf={handleDownloadPdf}
+        onShare={handleShare}
+        onStatusChange={handleStatusChange}
+        view={view}
+        onViewChange={setView}
+      />
+    )
+  }
+
   return (
     <>
       {selectedInvoice && (
@@ -109,30 +139,7 @@ export default function App() {
           />
         </Sidebar>
       }
-      main={
-        !selectedInvoice || section !== 'invoices'
-          ? (
-            <div className="flex flex-col items-center justify-center h-full gap-2 text-[var(--muted)]">
-              <p className="text-sm">No invoice selected</p>
-              <p className="text-xs">
-                Press <kbd className="px-1.5 py-0.5 text-[10px] border border-[var(--border)] rounded font-mono">N</kbd> to create one
-              </p>
-            </div>
-          )
-          : (
-            <InvoiceEditor
-              invoice={selectedInvoice}
-              data={data}
-              onChange={handleChange}
-              onSave={handleSave}
-              onDownloadPdf={handleDownloadPdf}
-              onShare={handleShare}
-              onStatusChange={handleStatusChange}
-              view={view}
-              onViewChange={setView}
-            />
-          )
-      }
+      main={renderMain()}
     />
     </>
   )
