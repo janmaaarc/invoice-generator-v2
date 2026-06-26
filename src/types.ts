@@ -362,6 +362,22 @@ export function decodeInvoiceFromUrl(encoded: string): InvoiceData | null {
   }
 }
 
+export function hasBankDetails(d: BankDetails | undefined): d is BankDetails {
+  return !!d && Object.values(d).some(v => v.trim() !== '');
+}
+
+function formatBankDetailsText(details?: BankDetails): string {
+  if (!hasBankDetails(details)) return '';
+  const lines: string[] = [
+    details.bankName && `Bank: ${details.bankName}`,
+    details.accountName && `Account Name: ${details.accountName}`,
+    details.accountNumber && `Account No.: ${details.accountNumber}`,
+    details.swiftCode && `SWIFT/BIC: ${details.swiftCode}`,
+    details.address && `Address: ${details.address}`,
+  ].filter(Boolean) as string[];
+  return lines.length ? `\n${lines.join('\n')}` : '';
+}
+
 export function generateEmailShareLink(invoice: InvoiceData): string {
   if (!isValidEmail(invoice.toEmail)) return '';
   const total = getInvoiceTotal(invoice);
@@ -372,7 +388,7 @@ export function generateEmailShareLink(invoice: InvoiceData): string {
     `Please find invoice ${invoice.invoiceNumber} for ${currency.symbol}${total.toFixed(2)}.\n\n` +
     `Due Date: ${invoice.dueDate}\n` +
     `Payment Method: ${invoice.paymentMethod}\n` +
-    (invoice.paymentDetails ? `Payment Details: ${invoice.paymentDetails}\n` : '') +
+    (hasBankDetails(invoice.bankDetails) ? formatBankDetailsText(invoice.bankDetails) + '\n' : invoice.paymentDetails ? `Payment Details: ${invoice.paymentDetails}\n` : '') +
     `\nThank you for your business!\n\n` +
     `${invoice.fromName}`
   );
@@ -388,7 +404,7 @@ export function generateWhatsAppShareLink(invoice: InvoiceData): string {
     `Amount: ${currency.symbol}${total.toFixed(2)}\n` +
     `Due: ${invoice.dueDate}\n\n` +
     `Payment: ${invoice.paymentMethod}` +
-    (invoice.paymentDetails ? `\n${invoice.paymentDetails}` : '') +
+    (hasBankDetails(invoice.bankDetails) ? formatBankDetailsText(invoice.bankDetails) : invoice.paymentDetails ? `\n${invoice.paymentDetails}` : '') +
     `\n\nThank you!`
   );
   return `https://wa.me/?text=${message}`;

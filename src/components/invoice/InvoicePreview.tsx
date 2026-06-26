@@ -1,5 +1,5 @@
 import { forwardRef } from 'react'
-import { formatCurrency, getInvoiceSubtotal, CURRENCIES } from '../../types'
+import { formatCurrency, getInvoiceSubtotal, CURRENCIES, hasBankDetails } from '../../types'
 import type { InvoiceData, AppSettings, BankDetails } from '../../types'
 
 function BankBlock({ method, details }: { method: string; details: BankDetails }) {
@@ -149,7 +149,7 @@ function MinimalPreview({ invoice, settings, currency }: {
         <TotalsBlock invoice={invoice} currency={currency} accentColor={accent} />
       </div>
 
-      {(invoice.paymentMethod || invoice.paymentDetails || invoice.bankDetails) && (
+      {(invoice.paymentMethod || invoice.paymentDetails || hasBankDetails(invoice.bankDetails)) && (
         <div style={{ borderTop: '1px solid #f4f4f5', paddingTop: 24, marginBottom: 24 }}>
           <p style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: accent, margin: '0 0 10px' }}>Payment</p>
           {invoice.bankDetails ? (
@@ -256,10 +256,10 @@ function ClassicPreview({ invoice, settings, currency }: {
           />
         </div>
 
-        {(invoice.paymentMethod || invoice.paymentDetails || invoice.bankDetails) && (
+        {(invoice.paymentMethod || invoice.paymentDetails || hasBankDetails(invoice.bankDetails)) && (
           <div style={{ borderTop: '2px solid #f4f4f5', paddingTop: 24, marginBottom: 24 }}>
             <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#a1a1aa', margin: '0 0 10px' }}>Payment</p>
-            {invoice.bankDetails ? (
+            {hasBankDetails(invoice.bankDetails) ? (
               <BankBlock method={invoice.paymentMethod} details={invoice.bankDetails} />
             ) : (
               <>
@@ -367,10 +367,10 @@ function ModernPreview({ invoice, settings, currency }: {
           </div>
         </div>
 
-        {(invoice.paymentMethod || invoice.paymentDetails || invoice.bankDetails) && (
+        {(invoice.paymentMethod || invoice.paymentDetails || hasBankDetails(invoice.bankDetails)) && (
           <div style={{ background: '#f9f9f9', borderRadius: 8, padding: '16px 20px', marginBottom: 24 }}>
             <p style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: accent, margin: '0 0 10px' }}>Payment</p>
-            {invoice.bankDetails ? (
+            {hasBankDetails(invoice.bankDetails) ? (
               <BankBlock method={invoice.paymentMethod} details={invoice.bankDetails} />
             ) : (
               <>

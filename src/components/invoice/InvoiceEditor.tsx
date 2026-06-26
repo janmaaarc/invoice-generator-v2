@@ -8,6 +8,8 @@ import {
 import type { InvoiceData, AppData, InvoiceStatus, LineItem, BankDetails } from '../../types'
 import { InvoicePreview } from './InvoicePreview'
 
+const BANK_METHOD_RE = /swift|bank.?transfer|wire/i
+
 interface InvoiceEditorProps {
   invoice: InvoiceData
   data: AppData
@@ -487,7 +489,7 @@ export function InvoiceEditor({
                 {(data.paymentMethods || []).map(m => (
                   <button
                     key={m.id}
-                    onClick={() => onChange({ ...invoice, paymentMethod: m.name, paymentDetails: m.details, updatedAt: new Date().toISOString() })}
+                    onClick={() => onChange({ ...invoice, paymentMethod: m.name, paymentDetails: m.details, bankDetails: undefined, updatedAt: new Date().toISOString() })}
                     className={`px-2.5 py-1 text-xs rounded-md border transition-colors ${
                       invoice.paymentMethod === m.name
                         ? 'bg-[var(--text)] text-[var(--bg)] border-[var(--text)]'
@@ -500,12 +502,25 @@ export function InvoiceEditor({
               </div>
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input label="Method" value={invoice.paymentMethod} onChange={e => set('paymentMethod', e.target.value)} placeholder="PayPal, Bank Transfer, Swift…" />
-              {!/swift|bank.?transfer|wire/i.test(invoice.paymentMethod) && (
+              <Input
+                label="Method"
+                value={invoice.paymentMethod}
+                onChange={e => {
+                  const method = e.target.value
+                  onChange({
+                    ...invoice,
+                    paymentMethod: method,
+                    bankDetails: BANK_METHOD_RE.test(method) ? invoice.bankDetails : undefined,
+                    updatedAt: new Date().toISOString(),
+                  })
+                }}
+                placeholder="PayPal, Bank Transfer, Swift…"
+              />
+              {!BANK_METHOD_RE.test(invoice.paymentMethod) && (
                 <Input label="Details" value={invoice.paymentDetails} onChange={e => set('paymentDetails', e.target.value)} placeholder="Account number, email…" />
               )}
             </div>
-            {/swift|bank.?transfer|wire/i.test(invoice.paymentMethod) && (
+            {BANK_METHOD_RE.test(invoice.paymentMethod) && (
               <div className="mt-3 p-4 rounded-lg border border-[var(--border)] bg-[var(--surface)] space-y-3">
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)]">Bank / SWIFT Details</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
