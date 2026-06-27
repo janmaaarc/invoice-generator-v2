@@ -11,7 +11,7 @@ import { useTheme } from './hooks/useTheme'
 import { loadAppData, saveAppData } from './storage'
 import {
   createNewInvoice, generateEmailShareLink, generateWhatsAppShareLink,
-  buildPdfFilename,
+  buildPdfFilename, calculateDueDate,
 } from './types'
 import type { AppData, InvoiceData, InvoiceStatus } from './types'
 
@@ -198,9 +198,15 @@ export default function App() {
     )
     if (!selectedInvoice) {
       return wrap(
-        <div className="flex flex-col items-center justify-center h-full gap-2 text-[var(--muted)]">
+        <div className="flex flex-col items-center justify-center h-full gap-3 text-[var(--muted)]">
           <p className="text-sm">No invoice selected</p>
-          <p className="text-xs">Press <kbd className="px-1.5 py-0.5 text-[10px] border border-[var(--border)] rounded font-mono">N</kbd> to create one</p>
+          <button
+            onClick={handleNewInvoice}
+            className="md:hidden px-4 py-2 text-sm font-medium bg-[var(--text)] text-[var(--bg)] rounded-lg hover:opacity-80 transition-opacity"
+          >
+            + New invoice
+          </button>
+          <p className="hidden md:block text-xs">Press <kbd className="px-1.5 py-0.5 text-[10px] border border-[var(--border)] rounded font-mono">N</kbd> to create one</p>
         </div>
       )
     }
@@ -283,7 +289,24 @@ export default function App() {
           <div className="w-full max-w-3xl h-[92dvh] sm:h-[80vh] sm:max-h-[700px] bg-[var(--bg)] border-0 sm:border border-[var(--border)] rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col">
             <Settings
               data={data}
-              onChange={next => { setData(next); saveAppData(next) }}
+              onChange={next => {
+                let finalData = next
+                if (
+                  selectedId &&
+                  next.settings.defaultDueDate !== data.settings.defaultDueDate
+                ) {
+                  finalData = {
+                    ...next,
+                    invoices: next.invoices.map(inv =>
+                      inv.id === selectedId && inv.status === 'draft'
+                        ? { ...inv, dueDate: calculateDueDate(next.settings.defaultDueDate, inv.invoiceDate), updatedAt: new Date().toISOString() }
+                        : inv
+                    ),
+                  }
+                }
+                setData(finalData)
+                saveAppData(finalData)
+              }}
               onSave={handleSave}
               onClose={() => { setShowSettings(false); setRecurringPrefill(undefined) }}
               prefillInvoice={recurringPrefill}
