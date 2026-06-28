@@ -15,7 +15,6 @@ Fill in your client's name, add what you're charging for, and your invoice is re
 - **Email** — opens your mail app with the invoice details already written
 - **WhatsApp** — sends a pre-filled message to your client
 - **PDF** — download a professional PDF to send however you like
-- **Image** — save as a PNG if you need to attach it somewhere
 
 ### Get paid faster
 Add your payment details (PayPal, GCash, bank account, etc.) once, then pick it with one click on every invoice. You can even add a QR code so clients can scan and pay instantly.
@@ -23,8 +22,11 @@ Add your payment details (PayPal, GCash, bank account, etc.) once, then pick it 
 ### Save your regulars
 Save your frequent clients so you don't retype their details every time. Same for your common services. Save them as templates and drop them into any invoice.
 
+### Track clients at a glance
+The Clients view shows every saved client with their invoice count, total billed, outstanding balance, and last invoice date. One click creates a new invoice pre-filled with their info.
+
 ### Set and forget with recurring invoices
-Have a client you bill every month? Set up a recurring invoice once, pick the day, the amount, the payment terms, and the app creates a new draft invoice automatically when it's due. You'll get a notification so nothing slips through.
+Have a client you bill every month? Set up a recurring invoice once in Settings, pick the day, the amount, the payment terms, and the app creates a new draft invoice automatically when it is due. You will get a notification so nothing slips through.
 
 ### Track what's paid
 Mark invoices as Draft, Sent, or Paid. Record partial payments if a client pays in installments. See exactly how much is still owed.
@@ -53,8 +55,8 @@ Everything is saved in your browser. Nothing is sent to any server. Export a bac
 5. Hit **Download PDF** or share via email/WhatsApp
 
 ### Recurring invoices (auto-billing)
-1. Go to **Recurring** in the sidebar
-2. Click **New**, give it a name (e.g. "Monthly retainer for Acme Corp")
+1. Go to **Settings** and open the **Recurring** tab
+2. Click **New schedule**, give it a name (e.g. "Monthly retainer for Acme Corp")
 3. Fill in the client, services, and how often to bill
 4. The app creates a draft invoice automatically on the scheduled date
 
@@ -62,11 +64,12 @@ Everything is saved in your browser. Nothing is sent to any server. Export a bac
 
 ## Keyboard shortcuts
 
-| Action | Mac | Windows / Linux |
-|--------|-----|-----------------|
-| New invoice | ⌘N | Ctrl+N |
-| Save | ⌘S | Ctrl+S |
-| Download PDF | ⌘P | Ctrl+P |
+| Action | Shortcut |
+|--------|----------|
+| New invoice | N |
+| Save | Cmd/Ctrl + S |
+| Toggle preview | Cmd/Ctrl + P |
+| Show shortcuts | ? |
 
 ---
 
@@ -77,13 +80,14 @@ Everything is saved in your browser. Nothing is sent to any server. Export a bac
 | Invoice editor | Fill in client, services, tax, discount, notes |
 | Live preview | See the final invoice as you type |
 | 3 templates | Minimal, Classic, Modern layouts |
-| Clients | Save client details for quick reuse |
-| Templates | Save common service packages |
+| Clients view | Per-client stats, quick invoice creation |
+| Saved clients | Store client details for quick reuse |
+| Line item templates | Save common service packages |
 | Payment methods | Save PayPal/GCash/bank info, pick per invoice |
 | Recurring invoices | Auto-generate invoices on a schedule |
 | Partial payments | Record installments, track remaining balance |
 | QR code | Optional payment QR on the invoice |
-| PDF / PNG export | High-quality downloads |
+| PDF export | High-quality PDF download |
 | Email / WhatsApp share | Pre-filled messages ready to send |
 | Dark mode | Light and dark themes |
 | Data export/import | Backup and restore your invoices |
@@ -111,18 +115,17 @@ src/
 │   ├── recurring.ts      — Schedule computation, invoice generation
 │   └── notifications.ts  — SW registration, notification permission
 ├── components/
-│   ├── invoice/          — Editor + list + preview
-│   ├── recurring/        — Recurring CRUD UI
-│   ├── payments/         — Payment methods CRUD
-│   ├── clients/          — Saved clients
-│   ├── templates/        — Line item templates
-│   └── settings/         — App settings
+│   ├── invoice/          — Editor, list, preview
+│   ├── clients/          — Clients view with invoice stats
+│   ├── layout/           — Shell, Sidebar
+│   ├── settings/         — Settings modal (profile, invoice, appearance, clients, payments, templates, recurring, data)
+│   └── ui/               — Shared input components
 └── index.css             — CSS custom properties (design tokens)
 ```
 
 **Get started:**
 ```bash
-git clone https://github.com/janmaaarc/invoice-generator.git
+git clone https://github.com/janmaaarc/invoice-generator-v2.git
 cd invoice-generator-v2
 npm install
 npm run dev       # http://localhost:5173
