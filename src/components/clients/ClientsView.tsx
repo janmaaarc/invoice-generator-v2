@@ -1,13 +1,14 @@
-import { Users, Plus } from 'lucide-react'
+import { Users, Plus, ChevronLeft } from 'lucide-react'
 import type { AppData, SavedClient } from '../../types'
 import { getInvoiceTotal, getInvoiceBalance, formatCurrency } from '../../types'
 
 interface Props {
   data: AppData
   onNewInvoice: (client: SavedClient) => void
+  onOpenSidebar: () => void
 }
 
-export function ClientsView({ data, onNewInvoice }: Props) {
+export function ClientsView({ data, onNewInvoice, onOpenSidebar }: Props) {
   const { clients, invoices } = data
 
   function statsFor(client: SavedClient) {
@@ -27,6 +28,9 @@ export function ClientsView({ data, onNewInvoice }: Props) {
   if (clients.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-2 text-[var(--muted)]">
+        <button onClick={onOpenSidebar} className="md:hidden absolute top-4 left-4 p-1 text-[var(--muted)] hover:text-[var(--text)]">
+          <ChevronLeft size={18} />
+        </button>
         <Users size={24} className="opacity-30" />
         <p className="text-sm">No clients yet</p>
         <p className="text-xs opacity-60">Add clients in Settings</p>
@@ -38,7 +42,12 @@ export function ClientsView({ data, onNewInvoice }: Props) {
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-2xl mx-auto px-4 md:px-8 py-8">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-base font-semibold tracking-tight">Clients</h1>
+          <div className="flex items-center gap-2">
+            <button onClick={onOpenSidebar} className="md:hidden p-1 -ml-1 text-[var(--muted)] hover:text-[var(--text)]">
+              <ChevronLeft size={18} />
+            </button>
+            <h1 className="text-base font-semibold tracking-tight">Clients</h1>
+          </div>
           <span className="text-xs text-[var(--muted)]">{clients.length} client{clients.length !== 1 ? 's' : ''}</span>
         </div>
         <div className="space-y-2">

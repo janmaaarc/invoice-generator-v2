@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react'
+import { ChevronLeft } from 'lucide-react'
 import { Shell } from './components/layout/Shell'
 import { Sidebar, type Section } from './components/layout/Sidebar'
 import { InvoiceList } from './components/invoice/InvoiceList'
@@ -213,11 +214,17 @@ export default function App() {
       <div key={sectionKey} className="animate-section flex flex-col h-full">{node}</div>
     )
     if (section === 'clients') {
-      return wrap(<ClientsView data={data} onNewInvoice={handleNewInvoiceForClient} />)
+      return wrap(<ClientsView data={data} onNewInvoice={handleNewInvoiceForClient} onOpenSidebar={() => setMobilePanel('list')} />)
     }
     if (!selectedInvoice) {
       return wrap(
         <div className="flex flex-col items-center justify-center h-full gap-3 text-[var(--muted)]">
+          <button
+            onClick={() => setMobilePanel('list')}
+            className="md:hidden absolute top-4 left-4 p-1 text-[var(--muted)] hover:text-[var(--text)]"
+          >
+            <ChevronLeft size={18} />
+          </button>
           <p className="text-sm">No invoice selected</p>
           <button
             onClick={handleNewInvoice}
