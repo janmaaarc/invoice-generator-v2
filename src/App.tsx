@@ -5,6 +5,7 @@ import { InvoiceList } from './components/invoice/InvoiceList'
 import { InvoiceEditor } from './components/invoice/InvoiceEditor'
 import { InvoicePreview } from './components/invoice/InvoicePreview'
 import { Settings } from './components/settings/Settings'
+import { ClientsView } from './components/clients/ClientsView'
 import { checkAndGenerateDue } from './lib/recurring'
 import { requestNotificationPermission, registerServiceWorker, showNotification, cacheRecurringSchedule } from './lib/notifications'
 import { useTheme } from './hooks/useTheme'
@@ -13,7 +14,7 @@ import {
   createNewInvoice, generateEmailShareLink, generateWhatsAppShareLink,
   buildPdfFilename, calculateDueDate,
 } from './types'
-import type { AppData, InvoiceData, InvoiceStatus } from './types'
+import type { AppData, InvoiceData, InvoiceStatus, SavedClient } from './types'
 
 export default function App() {
   const { theme, toggle } = useTheme()
@@ -96,6 +97,21 @@ export default function App() {
     if (!invoice) return
     setRecurringPrefill(invoice)
     setShowSettings(true)
+  }
+
+  function handleNewInvoiceForClient(client: SavedClient) {
+    const invoice = createNewInvoice(data.settings)
+    const withClient: InvoiceData = { ...invoice, toName: client.name, toEmail: client.email, toAddress: client.address }
+    const nextData: AppData = {
+      ...data,
+      invoices: [withClient, ...data.invoices],
+      settings: { ...data.settings, lastInvoiceNumber: data.settings.lastInvoiceNumber + 1 },
+    }
+    setData(nextData)
+    saveAppData(nextData)
+    setSelectedId(withClient.id)
+    setSection('invoices')
+    setMobilePanel('detail')
   }
 
   function handleDuplicate(id: string) {
@@ -196,6 +212,9 @@ export default function App() {
     const wrap = (node: ReactNode) => (
       <div key={sectionKey} className="animate-section flex flex-col h-full">{node}</div>
     )
+    if (section === 'clients') {
+      return wrap(<ClientsView data={data} onNewInvoice={handleNewInvoiceForClient} />)
+    }
     if (!selectedInvoice) {
       return wrap(
         <div className="flex flex-col items-center justify-center h-full gap-3 text-[var(--muted)]">
@@ -244,6 +263,8 @@ export default function App() {
             onThemeToggle={toggle}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
+            section={section}
+            onSectionChange={setSection}
           >
             <InvoiceList
               invoices={filteredInvoices}
