@@ -574,13 +574,13 @@ export function InvoiceEditor({
             {hasBankDetails(invoice.bankDetails) && (() => {
               const bd = invoice.bankDetails!
               return (
+              <>
               <div className="mt-4 rounded-lg bg-[var(--bg)] divide-y divide-[var(--border)] overflow-hidden">
                 {([
                   ['Bank', bd.bankName],
                   ['Account name', bd.accountName],
                   ['Account no.', bd.accountNumber],
                   ['SWIFT / BIC', bd.swiftCode],
-                  ['Address', bd.address],
                 ] as [string, string][]).filter(([, v]) => v).map(([label, value]) => (
                   <div key={label} className="flex items-center px-4 py-2.5 gap-4">
                     <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] w-24 flex-shrink-0">{label}</span>
@@ -588,6 +588,15 @@ export function InvoiceEditor({
                   </div>
                 ))}
               </div>
+              <div className="mt-3">
+                <Input
+                  label="Address"
+                  value={bd.address || ''}
+                  onChange={e => onChange({ ...invoice, bankDetails: { ...bd, address: e.target.value }, updatedAt: new Date().toISOString() })}
+                  placeholder="Bank address…"
+                />
+              </div>
+              </>
               )
             })()}
           </div>
