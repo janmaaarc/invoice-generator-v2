@@ -57,6 +57,7 @@ export function Settings({ data, onChange, onSave, onClose, prefillInvoice }: Se
   const [selectedPayType, setSelectedPayType] = useState<string>('paypal')
   const [draftBankDetails, setDraftBankDetails] = useState<BankDetails>({ bankName: '', accountName: '', accountNumber: '', swiftCode: '', address: '' })
   const [templateDraft, setTemplateDraft] = useState<SavedLineItem>({ id: crypto.randomUUID(), description: '', rate: 0 })
+  const [expandedPaymentId, setExpandedPaymentId] = useState<string | null>(null)
 
   useEffect(() => {
     if (prefillInvoice) setTab('recurring')
@@ -634,27 +635,61 @@ export function Settings({ data, onChange, onSave, onClose, prefillInvoice }: Se
                   {/* Saved list */}
                   {data.paymentMethods.length > 0 ? (
                     <div className="space-y-1">
-                      {data.paymentMethods.map(m => (
-                        <div key={m.id} className="group flex items-center justify-between px-3 py-2.5 rounded-md bg-[var(--surface)] border border-[var(--border)]">
-                          <div className="min-w-0 flex items-center gap-2.5">
-                            <span className={`flex-shrink-0 text-[9px] font-semibold uppercase tracking-widest px-1.5 py-0.5 rounded ${
-                              m.type === 'bank'
-                                ? 'bg-blue-500/10 text-blue-500'
-                                : 'bg-[var(--border)] text-[var(--muted)]'
-                            }`}>
-                              {m.type === 'bank' ? 'Bank' : 'Pay'}
-                            </span>
-                            <span className="text-sm font-medium text-[var(--text)] flex-shrink-0">{m.name}</span>
-                            {m.details && <span className="text-xs text-[var(--muted)] truncate">{m.details}</span>}
-                            {m.type === 'bank' && m.bankDetails && hasBankDetails(m.bankDetails) && (
-                              <span className="text-xs text-[var(--muted)] truncate">{m.bankDetails.bankName}</span>
-                            )}
+                      {data.paymentMethods.map(m => {
+                        const isExpanded = expandedPaymentId === m.id
+                        const bd = m.type === 'bank' ? m.bankDetails : null
+                        return (
+                        <div key={m.id} className="rounded-md bg-[var(--surface)] border border-[var(--border)] overflow-hidden">
+                          <div
+                            className="group flex items-center justify-between px-3 py-2.5 cursor-pointer hover:bg-[var(--bg)] transition-colors"
+                            onClick={() => setExpandedPaymentId(isExpanded ? null : m.id)}
+                          >
+                            <div className="min-w-0 flex items-center gap-2.5">
+                              <span className={`flex-shrink-0 text-[9px] font-semibold uppercase tracking-widest px-1.5 py-0.5 rounded ${
+                                m.type === 'bank'
+                                  ? 'bg-blue-500/10 text-blue-500'
+                                  : 'bg-[var(--border)] text-[var(--muted)]'
+                              }`}>
+                                {m.type === 'bank' ? 'Bank' : 'Pay'}
+                              </span>
+                              <span className="text-sm font-medium text-[var(--text)] flex-shrink-0">{m.name}</span>
+                              {!isExpanded && m.details && <span className="text-xs text-[var(--muted)] truncate">{m.details}</span>}
+                              {!isExpanded && bd && hasBankDetails(bd) && (
+                                <span className="text-xs text-[var(--muted)] truncate">{bd.bankName}</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1 flex-shrink-0 ml-3">
+                              <button onClick={e => { e.stopPropagation(); removePayment(m.id) }} className="opacity-0 group-hover:opacity-100 p-1 text-[var(--muted)] hover:text-red-500 rounded transition-all">
+                                <Trash2 size={12} />
+                              </button>
+                              <ChevronRight size={12} className={`text-[var(--muted)] transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                            </div>
                           </div>
-                          <button onClick={() => removePayment(m.id)} className="opacity-0 group-hover:opacity-100 flex-shrink-0 ml-3 p-1 text-[var(--muted)] hover:text-red-500 rounded transition-all">
-                            <Trash2 size={12} />
-                          </button>
+                          {isExpanded && (
+                            <div className="px-3 pb-3 border-t border-[var(--border)] pt-2.5 space-y-1.5">
+                              {bd && hasBankDetails(bd) ? (
+                                <>
+                                  {([
+                                    ['Bank', bd.bankName],
+                                    ['Account name', bd.accountName],
+                                    ['Account no.', bd.accountNumber],
+                                    ['SWIFT / BIC', bd.swiftCode],
+                                    ['Address', bd.address],
+                                  ] as [string, string][]).filter(([, v]) => v).map(([label, value]) => (
+                                    <div key={label} className="flex gap-3">
+                                      <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] w-24 flex-shrink-0 pt-0.5">{label}</span>
+                                      <span className="text-xs text-[var(--text)]">{value}</span>
+                                    </div>
+                                  ))}
+                                </>
+                              ) : (
+                                <p className="text-xs text-[var(--muted)]">{m.details || '—'}</p>
+                              )}
+                            </div>
+                          )}
                         </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   ) : (
                     <div className="flex items-center justify-center h-14 rounded-md border border-dashed border-[var(--border)]">
