@@ -4,7 +4,22 @@ export interface BankDetails {
   accountNumber: string;
   swiftCode: string;
   address: string;
+  // optional so methods saved before Wise support still parse
+  accountType?: string;
+  routingNumber?: string;
+  holderAddress?: string;
 }
+
+export const EMPTY_BANK_DETAILS: BankDetails = {
+  bankName: '',
+  accountName: '',
+  accountNumber: '',
+  swiftCode: '',
+  address: '',
+  accountType: '',
+  routingNumber: '',
+  holderAddress: '',
+};
 
 export interface LineItem {
   id: string;
@@ -367,18 +382,27 @@ export function decodeInvoiceFromUrl(encoded: string): InvoiceData | null {
 }
 
 export function hasBankDetails(d: BankDetails | undefined): d is BankDetails {
-  return !!d && Object.values(d).some(v => v.trim() !== '');
+  return !!d && Object.values(d).some(v => typeof v === 'string' && v.trim() !== '');
+}
+
+// single source of truth for bank row order and labels, rendered by settings, editor, preview and share links
+export function bankDetailRows(d: BankDetails): [string, string][] {
+  return ([
+    ['Bank', d.bankName],
+    ['Account Name', d.accountName],
+    ['Account No.', d.accountNumber],
+    ['Account Type', d.accountType],
+    ['Routing No.', d.routingNumber],
+    ['SWIFT / BIC', d.swiftCode],
+    ['Bank Address', d.address],
+    ['Holder Address', d.holderAddress],
+  ] as [string, string | undefined][])
+    .filter((row): row is [string, string] => !!row[1] && row[1].trim() !== '');
 }
 
 function formatBankDetailsText(details?: BankDetails): string {
   if (!hasBankDetails(details)) return '';
-  const lines: string[] = [
-    details.bankName && `Bank: ${details.bankName}`,
-    details.accountName && `Account Name: ${details.accountName}`,
-    details.accountNumber && `Account No.: ${details.accountNumber}`,
-    details.swiftCode && `SWIFT/BIC: ${details.swiftCode}`,
-    details.address && `Address: ${details.address}`,
-  ].filter(Boolean) as string[];
+  const lines = bankDetailRows(details).map(([label, value]) => `${label}: ${value}`);
   return lines.length ? `\n${lines.join('\n')}` : '';
 }
 

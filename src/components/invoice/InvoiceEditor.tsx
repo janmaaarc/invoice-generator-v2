@@ -6,7 +6,7 @@ import {
   formatCurrency, getInvoiceTotal, getInvoiceSubtotal, getInvoiceBalance,
 } from '../../types'
 import type { InvoiceData, AppData, InvoiceStatus, LineItem } from '../../types'
-import { hasBankDetails } from '../../types'
+import { hasBankDetails, bankDetailRows } from '../../types'
 import { InvoicePreview } from './InvoicePreview'
 
 interface InvoiceEditorProps {
@@ -576,15 +576,9 @@ export function InvoiceEditor({
               return (
               <>
               <div className="mt-4 rounded-lg bg-[var(--bg)] divide-y divide-[var(--border)] overflow-hidden">
-                {([
-                  ['Bank', bd.bankName],
-                  ['Account name', bd.accountName],
-                  ['Account no.', bd.accountNumber],
-                  ['SWIFT / BIC', bd.swiftCode],
-                  ['Address', bd.address],
-                ] as [string, string][]).filter(([, v]) => v).map(([label, value]) => (
+                {bankDetailRows(bd).map(([label, value]) => (
                   <div key={label} className="flex items-center px-4 py-2.5 gap-4">
-                    <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] w-24 flex-shrink-0">{label}</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] w-28 flex-shrink-0 leading-tight">{label}</span>
                     <span className="text-xs text-[var(--text)] truncate">{value}</span>
                   </div>
                 ))}

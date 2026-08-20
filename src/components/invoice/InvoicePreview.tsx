@@ -1,5 +1,5 @@
 import { forwardRef } from 'react'
-import { formatCurrency, getInvoiceSubtotal, CURRENCIES, hasBankDetails } from '../../types'
+import { formatCurrency, getInvoiceSubtotal, CURRENCIES, hasBankDetails, bankDetailRows } from '../../types'
 import type { InvoiceData, AppSettings, BankDetails } from '../../types'
 
 function BankBlock({ method, details, labelColor = '#a1a1aa', valueColor = '#09090b' }: {
@@ -8,13 +8,7 @@ function BankBlock({ method, details, labelColor = '#a1a1aa', valueColor = '#090
   labelColor?: string
   valueColor?: string
 }) {
-  const rows: [string, string][] = [
-    ['Bank', details.bankName],
-    ['Account Name', details.accountName],
-    ['Account No.', details.accountNumber],
-    ['SWIFT / BIC', details.swiftCode],
-    ['Address', details.address],
-  ].filter(([, v]) => v) as [string, string][]
+  const rows = bankDetailRows(details)
   return (
     <>
       {method && <p style={{ fontSize: 12, fontWeight: 600, margin: '0 0 8px', color: valueColor }}>{method}</p>}

@@ -1,11 +1,11 @@
 import { useRef, useState, useEffect } from 'react'
 import { Upload, X, User, Hash, Palette, Database, Users, RefreshCw, Check, Plus, Trash2, CreditCard, Layers, ToggleLeft, ToggleRight, ChevronRight, ChevronLeft } from 'lucide-react'
-import { DEFAULT_SETTINGS, ACCENT_COLORS, DUE_DATE_PRESETS, formatCurrency, hasBankDetails } from '../../types'
+import { DEFAULT_SETTINGS, ACCENT_COLORS, DUE_DATE_PRESETS, formatCurrency, hasBankDetails, bankDetailRows, EMPTY_BANK_DETAILS } from '../../types'
 import type { AppData, InvoiceData, SavedClient, SavedPaymentMethod, SavedLineItem, RecurringInvoice, RecurringFrequency, RecurringTemplate, BankDetails } from '../../types'
 import { exportDataAsJson, importDataFromJson } from '../../storage'
 import { initialNextDate } from '../../lib/recurring'
 
-const isBankType = (key: string): boolean => key === 'bank' || key === 'swift'
+const isBankType = (key: string): boolean => key === 'bank' || key === 'swift' || key === 'wise'
 
 interface SettingsProps {
   data: AppData
@@ -55,7 +55,7 @@ export function Settings({ data, onChange, onSave, onClose, prefillInvoice }: Se
   const [clientDraft, setClientDraft] = useState<SavedClient>({ id: crypto.randomUUID(), name: '', email: '', address: '' })
   const [paymentDraft, setPaymentDraft] = useState<SavedPaymentMethod>({ id: crypto.randomUUID(), name: '', details: '', type: 'simple' })
   const [selectedPayType, setSelectedPayType] = useState<string>('paypal')
-  const [draftBankDetails, setDraftBankDetails] = useState<BankDetails>({ bankName: '', accountName: '', accountNumber: '', swiftCode: '', address: '' })
+  const [draftBankDetails, setDraftBankDetails] = useState<BankDetails>({ ...EMPTY_BANK_DETAILS })
   const [templateDraft, setTemplateDraft] = useState<SavedLineItem>({ id: crypto.randomUUID(), description: '', rate: 0 })
   const [expandedPaymentId, setExpandedPaymentId] = useState<string | null>(null)
 
@@ -85,7 +85,7 @@ export function Settings({ data, onChange, onSave, onClose, prefillInvoice }: Se
     onChange({ ...data, paymentMethods: [...data.paymentMethods, method] })
     onSave()
     setPaymentDraft({ id: crypto.randomUUID(), name: '', details: '', type: 'simple' })
-    setDraftBankDetails({ bankName: '', accountName: '', accountNumber: '', swiftCode: '', address: '' })
+    setDraftBankDetails({ ...EMPTY_BANK_DETAILS })
   }
 
   function removePayment(id: string) {
@@ -540,8 +540,18 @@ export function Settings({ data, onChange, onSave, onClose, prefillInvoice }: Se
                 { key: 'maya',    label: 'Maya',             isBank: false, nameFill: 'Maya',             placeholder: '+63 9XX XXX XXXX' },
                 { key: 'bank',    label: 'Bank Transfer',   isBank: true,  nameFill: 'Bank Transfer',   placeholder: '' },
                 { key: 'swift',   label: 'SWIFT',           isBank: true,  nameFill: 'SWIFT',           placeholder: '' },
+                { key: 'wise',    label: 'Wise',            isBank: true,  nameFill: 'Wise',            placeholder: '' },
+                { key: 'wiselink', label: 'Wise Link',      isBank: false, nameFill: 'Wise',            placeholder: 'https://wise.com/pay/me/...' },
                 { key: 'custom',  label: '+ Custom',        isBank: false, nameFill: '',                placeholder: 'Account, link, or details' },
               ] as const
+
+              // Wise USD accounts always route through this bank, so prefill the constant parts
+              const WISE_PREFILL: Partial<BankDetails> = {
+                bankName: 'Wise US Inc',
+                address: '108 W 13th St, Wilmington, DE, 19801, United States',
+                accountType: 'Checking',
+                swiftCode: 'TRWIUS35XXX',
+              }
               const activeType = TYPES.find(t => t.key === selectedPayType) ?? TYPES[0]
               const isBank = activeType.isBank
 
@@ -558,7 +568,7 @@ export function Settings({ data, onChange, onSave, onClose, prefillInvoice }: Se
                         onClick={() => {
                           setSelectedPayType(t.key)
                           setPaymentDraft(d => ({ ...d, name: t.nameFill, details: '' }))
-                          setDraftBankDetails({ bankName: '', accountName: '', accountNumber: '', swiftCode: '', address: '' })
+                          setDraftBankDetails({ ...EMPTY_BANK_DETAILS, ...(t.key === 'wise' ? WISE_PREFILL : {}) })
                         }}
                         className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
                           selectedPayType === t.key
@@ -599,13 +609,27 @@ export function Settings({ data, onChange, onSave, onClose, prefillInvoice }: Se
                             <input className={inputCls} value={draftBankDetails.accountNumber} onChange={e => setDraftBankDetails(d => ({ ...d, accountNumber: e.target.value }))} placeholder="e.g. 1234567890" />
                           </div>
                           <div>
+                            <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] mb-1.5">Account type</p>
+                            <input className={inputCls} value={draftBankDetails.accountType ?? ''} onChange={e => setDraftBankDetails(d => ({ ...d, accountType: e.target.value }))} placeholder="e.g. Checking" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] mb-1.5">Routing number</p>
+                            <input className={inputCls} value={draftBankDetails.routingNumber ?? ''} onChange={e => setDraftBankDetails(d => ({ ...d, routingNumber: e.target.value }))} placeholder="e.g. 101019628" />
+                            <p className="text-[10px] text-[var(--muted)] mt-1">For wire and ACH, when sending from the US</p>
+                          </div>
+                          <div>
                             <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] mb-1.5">SWIFT / BIC</p>
-                            <input className={inputCls} value={draftBankDetails.swiftCode} onChange={e => setDraftBankDetails(d => ({ ...d, swiftCode: e.target.value }))} placeholder="e.g. CHASUS33" />
+                            <input className={inputCls} value={draftBankDetails.swiftCode} onChange={e => setDraftBankDetails(d => ({ ...d, swiftCode: e.target.value }))} placeholder="e.g. TRWIUS35XXX" />
+                            <p className="text-[10px] text-[var(--muted)] mt-1">When sending from outside the US</p>
                           </div>
                         </div>
                         <div>
-                          <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] mb-1.5">Address</p>
-                          <input className={inputCls} value={draftBankDetails.address} onChange={e => setDraftBankDetails(d => ({ ...d, address: e.target.value }))} placeholder="e.g. 123 Main St, New York, NY 10001" />
+                          <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] mb-1.5">Bank address</p>
+                          <input className={inputCls} value={draftBankDetails.address} onChange={e => setDraftBankDetails(d => ({ ...d, address: e.target.value }))} placeholder="e.g. 108 W 13th St, Wilmington, DE, 19801, United States" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] mb-1.5">Your address</p>
+                          <input className={inputCls} value={draftBankDetails.holderAddress ?? ''} onChange={e => setDraftBankDetails(d => ({ ...d, holderAddress: e.target.value }))} placeholder="e.g. 123 Main St, Cebu City, 6000, Philippines" />
                         </div>
                       </>
                     ) : (
@@ -669,15 +693,9 @@ export function Settings({ data, onChange, onSave, onClose, prefillInvoice }: Se
                             <div className="px-3 pb-3 border-t border-[var(--border)] pt-2.5 space-y-1.5">
                               {bd && hasBankDetails(bd) ? (
                                 <>
-                                  {([
-                                    ['Bank', bd.bankName],
-                                    ['Account name', bd.accountName],
-                                    ['Account no.', bd.accountNumber],
-                                    ['SWIFT / BIC', bd.swiftCode],
-                                    ['Address', bd.address],
-                                  ] as [string, string][]).filter(([, v]) => v).map(([label, value]) => (
+                                  {bankDetailRows(bd).map(([label, value]) => (
                                     <div key={label} className="flex gap-3">
-                                      <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] w-24 flex-shrink-0 pt-0.5">{label}</span>
+                                      <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] w-28 flex-shrink-0 pt-0.5 leading-tight">{label}</span>
                                       <span className="text-xs text-[var(--text)]">{value}</span>
                                     </div>
                                   ))}
