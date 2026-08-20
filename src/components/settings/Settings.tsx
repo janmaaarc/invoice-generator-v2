@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react'
-import { Upload, X, User, Hash, Palette, Database, Users, RefreshCw, Check, Plus, Trash2, CreditCard, Layers, ToggleLeft, ToggleRight, ChevronRight, ChevronLeft } from 'lucide-react'
+import { Upload, X, User, Hash, Palette, Database, Users, RefreshCw, Check, Plus, Pencil, Trash2, CreditCard, Layers, ToggleLeft, ToggleRight, ChevronRight, ChevronLeft } from 'lucide-react'
 import { DEFAULT_SETTINGS, ACCENT_COLORS, DUE_DATE_PRESETS, formatCurrency, hasBankDetails, bankDetailRows, EMPTY_BANK_DETAILS } from '../../types'
 import type { AppData, InvoiceData, SavedClient, SavedPaymentMethod, SavedLineItem, RecurringInvoice, RecurringFrequency, RecurringTemplate, BankDetails } from '../../types'
 import { exportDataAsJson, importDataFromJson } from '../../storage'
@@ -58,6 +58,7 @@ export function Settings({ data, onChange, onSave, onClose, prefillInvoice }: Se
   const [draftBankDetails, setDraftBankDetails] = useState<BankDetails>({ ...EMPTY_BANK_DETAILS })
   const [templateDraft, setTemplateDraft] = useState<SavedLineItem>({ id: crypto.randomUUID(), description: '', rate: 0 })
   const [expandedPaymentId, setExpandedPaymentId] = useState<string | null>(null)
+  const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null)
 
   useEffect(() => {
     if (prefillInvoice) setTab('recurring')
@@ -75,22 +76,44 @@ export function Settings({ data, onChange, onSave, onClose, prefillInvoice }: Se
     onSave()
   }
 
-  function addPayment() {
+  function savePayment() {
     const isBank = isBankType(selectedPayType)
     if (!paymentDraft.name.trim()) return
     if (isBank && !hasBankDetails(draftBankDetails)) return
+    // keep the id when editing so the method stays the same record
+    const id = editingPaymentId ?? crypto.randomUUID()
     const method: SavedPaymentMethod = isBank
-      ? { id: crypto.randomUUID(), name: paymentDraft.name, details: '', type: 'bank', bankDetails: { ...draftBankDetails } }
-      : { id: crypto.randomUUID(), name: paymentDraft.name, details: paymentDraft.details, type: 'simple' }
-    onChange({ ...data, paymentMethods: [...data.paymentMethods, method] })
+      ? { id, name: paymentDraft.name, details: '', type: 'bank', bankDetails: { ...draftBankDetails } }
+      : { id, name: paymentDraft.name, details: paymentDraft.details, type: 'simple' }
+    onChange({
+      ...data,
+      paymentMethods: editingPaymentId
+        ? data.paymentMethods.map(m => m.id === editingPaymentId ? method : m)
+        : [...data.paymentMethods, method],
+    })
     onSave()
+    resetPaymentDraft()
+  }
+
+  function resetPaymentDraft() {
     setPaymentDraft({ id: crypto.randomUUID(), name: '', details: '', type: 'simple' })
     setDraftBankDetails({ ...EMPTY_BANK_DETAILS })
+    setEditingPaymentId(null)
+  }
+
+  function startEditPayment(m: SavedPaymentMethod) {
+    setEditingPaymentId(m.id)
+    setSelectedPayType(m.type === 'bank' ? 'bank' : 'custom')
+    setPaymentDraft({ id: m.id, name: m.name, details: m.details, type: m.type ?? 'simple' })
+    // merge over the empty shape so methods saved before newer fields keep controlled inputs
+    setDraftBankDetails({ ...EMPTY_BANK_DETAILS, ...(m.bankDetails ?? {}) })
+    setExpandedPaymentId(null)
   }
 
   function removePayment(id: string) {
     onChange({ ...data, paymentMethods: data.paymentMethods.filter(m => m.id !== id) })
     onSave()
+    if (editingPaymentId === id) resetPaymentDraft()
   }
 
   function addTemplate() {
@@ -567,8 +590,8 @@ export function Settings({ data, onChange, onSave, onClose, prefillInvoice }: Se
                         key={t.key}
                         onClick={() => {
                           setSelectedPayType(t.key)
-                          setPaymentDraft(d => ({ ...d, name: t.nameFill, details: '' }))
-                          setDraftBankDetails({ ...EMPTY_BANK_DETAILS, ...(t.key === 'wise' ? WISE_PREFILL : {}) })
+                          setPaymentDraft(d => ({ ...d, name: editingPaymentId ? d.name : t.nameFill, details: editingPaymentId ? d.details : '' }))
+                          setDraftBankDetails(d => editingPaymentId ? d : { ...EMPTY_BANK_DETAILS, ...(t.key === 'wise' ? WISE_PREFILL : {}) })
                         }}
                         className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
                           selectedPayType === t.key
@@ -640,18 +663,23 @@ export function Settings({ data, onChange, onSave, onClose, prefillInvoice }: Se
                           value={paymentDraft.details}
                           onChange={e => setPaymentDraft(d => ({ ...d, details: e.target.value }))}
                           placeholder={activeType.placeholder}
-                          onKeyDown={e => e.key === 'Enter' && addPayment()}
+                          onKeyDown={e => e.key === 'Enter' && savePayment()}
                         />
                       </div>
                     )}
 
-                    <div className="flex justify-end pt-1">
+                    <div className="flex justify-end items-center gap-2 pt-1">
+                      {editingPaymentId && (
+                        <button onClick={resetPaymentDraft} className="px-3 py-1.5 text-xs text-[var(--muted)] hover:text-[var(--text)] transition-colors">
+                          Cancel
+                        </button>
+                      )}
                       <button
-                        onClick={addPayment}
+                        onClick={savePayment}
                         disabled={!paymentDraft.name.trim() || (isBank && !hasBankDetails(draftBankDetails))}
                         className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[var(--text)] text-[var(--bg)] rounded-md disabled:opacity-30 hover:opacity-80 transition-opacity"
                       >
-                        <Plus size={12} /> Save method
+                        {editingPaymentId ? <><Check size={12} /> Update method</> : <><Plus size={12} /> Save method</>}
                       </button>
                     </div>
                   </div>
@@ -683,7 +711,10 @@ export function Settings({ data, onChange, onSave, onClose, prefillInvoice }: Se
                               )}
                             </div>
                             <div className="flex items-center gap-1 flex-shrink-0 ml-3">
-                              <button onClick={e => { e.stopPropagation(); removePayment(m.id) }} className="opacity-0 group-hover:opacity-100 p-1 text-[var(--muted)] hover:text-red-500 rounded transition-all">
+                              <button onClick={e => { e.stopPropagation(); startEditPayment(m) }} aria-label={`Edit ${m.name}`} className="opacity-0 group-hover:opacity-100 p-1 text-[var(--muted)] hover:text-[var(--text)] rounded transition-all">
+                                <Pencil size={12} />
+                              </button>
+                              <button onClick={e => { e.stopPropagation(); removePayment(m.id) }} aria-label={`Delete ${m.name}`} className="opacity-0 group-hover:opacity-100 p-1 text-[var(--muted)] hover:text-red-500 rounded transition-all">
                                 <Trash2 size={12} />
                               </button>
                               <ChevronRight size={12} className={`text-[var(--muted)] transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
