@@ -61,14 +61,17 @@ function TotalsBlock({ invoice, accentColor, totalSize = 24, totalColor, labelCo
         {formatCurrency(total, invoice.currency)}
       </p>
       {deposit > 0 && (
-        <div style={{ marginTop: 12, paddingTop: 10, borderTop: `1px solid ${labelColor}33` }}>
+        // capped and right-aligned so long terms wrap under the rows instead of widening the whole block
+        <div style={{ marginTop: 12, paddingTop: 10, borderTop: `1px solid ${labelColor}33`, maxWidth: 240, marginLeft: 'auto' }}>
           <div style={{ ...rowStyle, marginBottom: 4, fontWeight: 600, color: totalColor || accentColor || '#09090b' }}>
-            <span>Due now</span><span>{formatCurrency(deposit, invoice.currency)}</span>
+            <span>Due now</span><span style={{ whiteSpace: 'nowrap' }}>{formatCurrency(deposit, invoice.currency)}</span>
           </div>
           <div style={{ ...rowStyle, marginBottom: 0 }}>
-            <span>Balance{invoice.depositTerms?.trim() ? ` ${invoice.depositTerms.trim()}` : ''}</span>
-            <span>{formatCurrency(total - deposit, invoice.currency)}</span>
+            <span>Balance</span><span style={{ whiteSpace: 'nowrap' }}>{formatCurrency(total - deposit, invoice.currency)}</span>
           </div>
+          {invoice.depositTerms?.trim() && (
+            <p style={{ fontSize: 10, color: rowColor, margin: '4px 0 0', lineHeight: 1.4, textAlign: 'left' }}>{invoice.depositTerms.trim()}</p>
+          )}
         </div>
       )}
     </div>

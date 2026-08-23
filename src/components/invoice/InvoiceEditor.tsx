@@ -487,7 +487,8 @@ export function InvoiceEditor({
             {/* Totals panel */}
             <div className="mt-4 pt-4 border-t border-[var(--border)]">
               <div className="flex items-start justify-between gap-4">
-                <div className="flex items-center gap-4 flex-wrap">
+                <div className="min-w-0 flex-1 flex flex-col gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
                   <div className="flex items-center gap-2">
                     <label className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] whitespace-nowrap">Disc %</label>
                     <input
@@ -508,27 +509,31 @@ export function InvoiceEditor({
                       onChange={e => set('taxRate', e.target.value === '' ? undefined : Number(e.target.value))}
                     />
                   </div>
+                </div>
+                {/* deposit fields get their own row: three amount controls do not fit the editor column, and a long terms field would otherwise reflow the percentages */}
+                <div className="flex items-center gap-3 min-w-0">
                   <div className="flex items-center gap-2">
                     <label className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] whitespace-nowrap">Due now</label>
                     <input
                       type="number" min={0} step={0.01}
-                      className="w-20 text-sm bg-transparent border-b border-[var(--border)] text-right tabular-nums text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--text)] transition-colors py-0.5"
+                      className="w-24 text-sm bg-transparent border-b border-[var(--border)] text-right tabular-nums text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--text)] transition-colors py-0.5"
                       value={invoice.depositAmount || ''}
                       placeholder="0.00"
                       onChange={e => set('depositAmount', e.target.value === '' ? undefined : Number(e.target.value))}
                     />
                   </div>
                   {!!invoice.depositAmount && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
                       <label className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] whitespace-nowrap">Balance</label>
                       <input
-                        className="w-36 text-sm bg-transparent border-b border-[var(--border)] text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--text)] transition-colors py-0.5"
+                        className="min-w-0 flex-1 text-sm bg-transparent border-b border-[var(--border)] text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--text)] transition-colors py-0.5"
                         value={invoice.depositTerms || ''}
                         placeholder="on sign-off"
                         onChange={e => set('depositTerms', e.target.value)}
                       />
                     </div>
                   )}
+                </div>
                 </div>
                 <div className="text-right space-y-1 flex-shrink-0">
                   {(invoice.discountPercent || invoice.taxRate) ? (
@@ -562,9 +567,12 @@ export function InvoiceEditor({
                         <span className="tabular-nums">{formatCurrency(deposit, invoice.currency)}</span>
                       </div>
                       <div className="flex justify-between gap-8 text-xs text-[var(--muted)]">
-                        <span>Balance{invoice.depositTerms?.trim() ? ` ${invoice.depositTerms.trim()}` : ''}</span>
+                        <span>Balance</span>
                         <span className="tabular-nums">{formatCurrency(total - deposit, invoice.currency)}</span>
                       </div>
+                      {invoice.depositTerms?.trim() && (
+                        <p className="text-[10px] text-[var(--muted)] leading-snug max-w-[180px] ml-auto text-left">{invoice.depositTerms.trim()}</p>
+                      )}
                     </div>
                   )}
                 </div>
