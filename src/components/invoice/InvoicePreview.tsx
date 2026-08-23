@@ -1,5 +1,5 @@
 import { forwardRef } from 'react'
-import { formatCurrency, getInvoiceSubtotal, CURRENCIES, hasBankDetails, bankDetailRows } from '../../types'
+import { formatCurrency, getInvoiceSubtotal, getInvoiceDeposit, CURRENCIES, hasBankDetails, bankDetailRows } from '../../types'
 import type { InvoiceData, AppSettings, BankDetails } from '../../types'
 
 function BankBlock({ method, details, labelColor = '#a1a1aa', valueColor = '#09090b' }: {
@@ -39,6 +39,7 @@ function TotalsBlock({ invoice, accentColor, totalSize = 24, totalColor, labelCo
   const afterDiscount = subtotal - discount
   const tax = afterDiscount * ((invoice.taxRate || 0) / 100)
   const total = afterDiscount + tax
+  const deposit = getInvoiceDeposit(invoice)
   const hasBreakdown = !!(invoice.discountPercent || invoice.taxRate)
   const rowStyle: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', gap: 32, fontSize: 12, marginBottom: 4, color: rowColor }
 
@@ -59,6 +60,17 @@ function TotalsBlock({ invoice, accentColor, totalSize = 24, totalColor, labelCo
       <p style={{ fontSize: totalSize, fontWeight: 700, margin: 0, letterSpacing: '-0.02em', color: totalColor || accentColor || '#09090b' }}>
         {formatCurrency(total, invoice.currency)}
       </p>
+      {deposit > 0 && (
+        <div style={{ marginTop: 12, paddingTop: 10, borderTop: `1px solid ${labelColor}33` }}>
+          <div style={{ ...rowStyle, marginBottom: 4, fontWeight: 600, color: totalColor || accentColor || '#09090b' }}>
+            <span>Due now</span><span>{formatCurrency(deposit, invoice.currency)}</span>
+          </div>
+          <div style={{ ...rowStyle, marginBottom: 0 }}>
+            <span>Balance{invoice.depositTerms?.trim() ? ` ${invoice.depositTerms.trim()}` : ''}</span>
+            <span>{formatCurrency(total - deposit, invoice.currency)}</span>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

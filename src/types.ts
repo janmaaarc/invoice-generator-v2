@@ -62,6 +62,10 @@ export interface InvoiceData {
   discountPercent?: number;
   sentHistory?: Array<{ date: string; method: 'email' | 'whatsapp' | 'pdf' }>;
   payments?: Array<{ id: string; date: string; amount: number; note: string }>;
+
+  // a prepayment the client still owes, unlike payments[] which is money already received
+  depositAmount?: number;
+  depositTerms?: string;
 }
 
 export interface SavedClient {
@@ -328,6 +332,13 @@ export function getInvoiceTotal(invoice: InvoiceData): number {
   return afterDiscount + tax;
 }
 
+// clamped to the total so a stale deposit can never exceed what is owed after the line items shrink
+export function getInvoiceDeposit(invoice: InvoiceData): number {
+  const deposit = invoice.depositAmount || 0;
+  if (deposit <= 0) return 0;
+  return Math.min(deposit, getInvoiceTotal(invoice));
+}
+
 export function getInvoicePaidAmount(invoice: InvoiceData): number {
   return (invoice.payments || []).reduce((sum, p) => sum + p.amount, 0);
 }
@@ -400,6 +411,17 @@ export function bankDetailRows(d: BankDetails): [string, string][] {
     .filter((row): row is [string, string] => !!row[1] && row[1].trim() !== '');
 }
 
+function formatDepositText(invoice: InvoiceData): string {
+  const deposit = getInvoiceDeposit(invoice);
+  if (!deposit) return '';
+  const balance = getInvoiceTotal(invoice) - deposit;
+  const terms = invoice.depositTerms?.trim();
+  return (
+    `Due now: ${formatCurrency(deposit, invoice.currency)}\n` +
+    `Balance: ${formatCurrency(balance, invoice.currency)}${terms ? ` ${terms}` : ''}\n`
+  );
+}
+
 function formatBankDetailsText(details?: BankDetails): string {
   if (!hasBankDetails(details)) return '';
   const lines = bankDetailRows(details).map(([label, value]) => `${label}: ${value}`);
@@ -414,6 +436,7 @@ export function generateEmailShareLink(invoice: InvoiceData): string {
   const body = encodeURIComponent(
     `Hi ${invoice.toName},\n\n` +
     `Please find invoice ${invoice.invoiceNumber} for ${currency.symbol}${total.toFixed(2)}.\n\n` +
+    formatDepositText(invoice) +
     `Due Date: ${invoice.dueDate}\n` +
     `Payment Method: ${invoice.paymentMethod}\n` +
     (hasBankDetails(invoice.bankDetails) ? formatBankDetailsText(invoice.bankDetails) + '\n' : invoice.paymentDetails ? `Payment Details: ${invoice.paymentDetails}\n` : '') +
@@ -430,6 +453,7 @@ export function generateWhatsAppShareLink(invoice: InvoiceData): string {
     `Hi ${invoice.toName},\n\n` +
     `Invoice: ${invoice.invoiceNumber}\n` +
     `Amount: ${currency.symbol}${total.toFixed(2)}\n` +
+    formatDepositText(invoice) +
     `Due: ${invoice.dueDate}\n\n` +
     `Payment: ${invoice.paymentMethod}` +
     (hasBankDetails(invoice.bankDetails) ? formatBankDetailsText(invoice.bankDetails) : invoice.paymentDetails ? `\n${invoice.paymentDetails}` : '') +

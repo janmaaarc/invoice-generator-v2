@@ -3,7 +3,7 @@ import { Download, Share2, Mail, MessageCircle, ChevronDown, ChevronLeft, ListPl
 import { Input, DatePicker } from '../ui'
 import {
   CURRENCIES,
-  formatCurrency, getInvoiceTotal, getInvoiceSubtotal, getInvoiceBalance,
+  formatCurrency, getInvoiceTotal, getInvoiceSubtotal, getInvoiceBalance, getInvoiceDeposit,
 } from '../../types'
 import type { InvoiceData, AppData, InvoiceStatus, LineItem } from '../../types'
 import { hasBankDetails, bankDetailRows } from '../../types'
@@ -203,6 +203,7 @@ export function InvoiceEditor({
 
   const total = getInvoiceTotal(invoice)
   const subtotal = getInvoiceSubtotal(invoice)
+  const deposit = getInvoiceDeposit(invoice)
   const selectCls = 'px-0 py-1.5 text-sm bg-transparent border-0 border-b border-[var(--border)] text-[var(--text)] focus:outline-none focus:border-[var(--text)] transition-colors'
   const inputCls = 'px-0 py-1.5 text-sm bg-transparent border-0 border-b border-[var(--border)] text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--text)] transition-colors w-full'
 
@@ -507,6 +508,27 @@ export function InvoiceEditor({
                       onChange={e => set('taxRate', e.target.value === '' ? undefined : Number(e.target.value))}
                     />
                   </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] whitespace-nowrap">Due now</label>
+                    <input
+                      type="number" min={0} step={0.01}
+                      className="w-20 text-sm bg-transparent border-b border-[var(--border)] text-right tabular-nums text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--text)] transition-colors py-0.5"
+                      value={invoice.depositAmount || ''}
+                      placeholder="0.00"
+                      onChange={e => set('depositAmount', e.target.value === '' ? undefined : Number(e.target.value))}
+                    />
+                  </div>
+                  {!!invoice.depositAmount && (
+                    <div className="flex items-center gap-2">
+                      <label className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] whitespace-nowrap">Balance</label>
+                      <input
+                        className="w-36 text-sm bg-transparent border-b border-[var(--border)] text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--text)] transition-colors py-0.5"
+                        value={invoice.depositTerms || ''}
+                        placeholder="on sign-off"
+                        onChange={e => set('depositTerms', e.target.value)}
+                      />
+                    </div>
+                  )}
                 </div>
                 <div className="text-right space-y-1 flex-shrink-0">
                   {(invoice.discountPercent || invoice.taxRate) ? (
@@ -533,6 +555,18 @@ export function InvoiceEditor({
                     <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] mb-0.5">Total due</p>
                     <p className="text-3xl font-bold tabular-nums tracking-tight">{formatCurrency(total, invoice.currency)}</p>
                   </div>
+                  {deposit > 0 && (
+                    <div className="pt-2 mt-2 space-y-1">
+                      <div className="flex justify-between gap-8 text-xs font-medium text-[var(--text)]">
+                        <span>Due now</span>
+                        <span className="tabular-nums">{formatCurrency(deposit, invoice.currency)}</span>
+                      </div>
+                      <div className="flex justify-between gap-8 text-xs text-[var(--muted)]">
+                        <span>Balance{invoice.depositTerms?.trim() ? ` ${invoice.depositTerms.trim()}` : ''}</span>
+                        <span className="tabular-nums">{formatCurrency(total - deposit, invoice.currency)}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
               <p className="text-[11px] text-[var(--muted)] mt-3">{invoice.lineItems.length} item{invoice.lineItems.length !== 1 ? 's' : ''}</p>
@@ -614,7 +648,7 @@ export function InvoiceEditor({
                 </button>
                 {(invoice.payments || []).length > 0 && (
                   <span className="text-xs text-[var(--muted)]">
-                    Balance: {formatCurrency(getInvoiceBalance(invoice), invoice.currency)}
+                    Outstanding: {formatCurrency(getInvoiceBalance(invoice), invoice.currency)}
                   </span>
                 )}
               </div>
