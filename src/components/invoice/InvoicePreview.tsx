@@ -424,9 +424,9 @@ function ModernPreview({ invoice, settings }: {
           </tbody>
         </table>
 
-        {/* Total — left accent border */}
+        {/* Total — hairline rule above, matching the header date box */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '32px 0 52px' }}>
-          <div style={{ borderLeft: `3px solid ${accent}`, paddingLeft: 20 }}>
+          <div style={{ borderTop: '1px solid #e4e4e7', paddingTop: 16, minWidth: 240 }}>
             <TotalsBlock invoice={invoice} totalSize={30} accentColor={accent} />
           </div>
         </div>
