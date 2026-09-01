@@ -66,6 +66,9 @@ export interface InvoiceData {
   // a prepayment the client still owes, unlike payments[] which is money already received
   depositAmount?: number;
   depositTerms?: string;
+
+  // the client's own reference, printed only when they issued one
+  poNumber?: string;
 }
 
 export interface SavedClient {

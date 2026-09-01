@@ -110,6 +110,12 @@ function MinimalPreview({ invoice, settings }: {
                 <p style={{ color: '#a1a1aa', margin: 0, letterSpacing: '0.05em', fontSize: 9, textTransform: 'uppercase', fontWeight: 500 }}>Due</p>
                 <p style={{ margin: '2px 0 0', fontWeight: 500 }}>{invoice.dueDate || '—'}</p>
               </div>
+              {invoice.poNumber?.trim() && (
+                <div style={{ marginTop: 8 }}>
+                  <p style={{ color: '#a1a1aa', margin: 0, letterSpacing: '0.05em', fontSize: 9, textTransform: 'uppercase', fontWeight: 500 }}>PO Number</p>
+                  <p style={{ margin: '2px 0 0', fontWeight: 500 }}>{invoice.poNumber}</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -228,6 +234,12 @@ function ClassicPreview({ invoice, settings }: {
               <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', margin: '0 0 2px', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: '"Helvetica Neue", Arial, sans-serif' }}>Due Date</p>
               <p style={{ fontSize: 14, fontWeight: 600, margin: 0, fontFamily: '"Helvetica Neue", Arial, sans-serif' }}>{invoice.dueDate || '—'}</p>
             </div>
+            {invoice.poNumber?.trim() && (
+              <div style={{ marginTop: 10 }}>
+                <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', margin: '0 0 2px', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: '"Helvetica Neue", Arial, sans-serif' }}>PO Number</p>
+                <p style={{ fontSize: 14, fontWeight: 600, margin: 0, fontFamily: '"Helvetica Neue", Arial, sans-serif' }}>{invoice.poNumber}</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -356,6 +368,12 @@ function ModernPreview({ invoice, settings }: {
                 <p style={{ fontSize: 9, fontWeight: 600, color: '#a1a1aa', margin: '0 0 3px', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Due</p>
                 <p style={{ fontSize: 13, fontWeight: 700, margin: 0, color: accent }}>{invoice.dueDate || '—'}</p>
               </div>
+              {invoice.poNumber?.trim() && (
+                <div style={{ marginTop: 10 }}>
+                  <p style={{ fontSize: 9, fontWeight: 600, color: '#a1a1aa', margin: '0 0 3px', letterSpacing: '0.12em', textTransform: 'uppercase' }}>PO Number</p>
+                  <p style={{ fontSize: 13, fontWeight: 600, margin: 0 }}>{invoice.poNumber}</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

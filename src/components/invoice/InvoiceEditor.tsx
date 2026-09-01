@@ -316,6 +316,15 @@ export function InvoiceEditor({
                 onChange={v => set('dueDate', v)}
               />
               <div className="flex flex-col gap-1 col-span-2 md:col-span-1">
+                <label className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)]">PO Number</label>
+                <input
+                  value={invoice.poNumber || ''}
+                  onChange={e => set('poNumber', e.target.value)}
+                  placeholder="Optional"
+                  className={inputCls}
+                />
+              </div>
+              <div className="flex flex-col gap-1 col-span-2 md:col-span-1">
                 <label className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)]">Currency</label>
                 <div className="relative">
                   <select value={invoice.currency} onChange={e => set('currency', e.target.value)} className={`${selectCls} appearance-none w-full pr-6`} style={{ WebkitAppearance: 'none' }}>
