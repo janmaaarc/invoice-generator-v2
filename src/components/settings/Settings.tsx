@@ -5,7 +5,7 @@ import type { AppData, InvoiceData, SavedClient, SavedPaymentMethod, SavedLineIt
 import { exportDataAsJson, importDataFromJson } from '../../storage'
 import { initialNextDate } from '../../lib/recurring'
 
-const isBankType = (key: string): boolean => key === 'bank' || key === 'swift' || key === 'wise'
+const isBankType = (key: string): boolean => key === 'bank' || key === 'swift' || key === 'wise' || key === 'payoneer'
 
 interface SettingsProps {
   data: AppData
@@ -565,6 +565,7 @@ export function Settings({ data, onChange, onSave, onClose, prefillInvoice }: Se
                 { key: 'swift',   label: 'SWIFT',           isBank: true,  nameFill: 'SWIFT',           placeholder: '' },
                 { key: 'wise',    label: 'Wise',            isBank: true,  nameFill: 'Wise',            placeholder: '' },
                 { key: 'wiselink', label: 'Wise Link',      isBank: false, nameFill: 'Wise Link',       placeholder: 'https://wise.com/pay/me/...' },
+                { key: 'payoneer', label: 'Payoneer EUR',   isBank: true,  nameFill: 'Payoneer EUR',    placeholder: '' },
                 { key: 'custom',  label: '+ Custom',        isBank: false, nameFill: '',                placeholder: 'Account, link, or details' },
               ] as const
 
@@ -574,6 +575,12 @@ export function Settings({ data, onChange, onSave, onClose, prefillInvoice }: Se
                 address: '108 W 13th St, Wilmington, DE, 19801, United States',
                 accountType: 'Checking',
                 swiftCode: 'TRWIUS35XXX',
+              }
+              // Payoneer EUR receiving accounts are held at Banking Circle, so prefill the constant parts
+              const PAYONEER_PREFILL: Partial<BankDetails> = {
+                bankName: 'Banking Circle S.A.',
+                address: '2 Boulevard de la Foire, L-1528 Luxembourg',
+                swiftCode: 'BCIRLULL',
               }
               const activeType = TYPES.find(t => t.key === selectedPayType) ?? TYPES[0]
               const isBank = activeType.isBank
@@ -591,7 +598,7 @@ export function Settings({ data, onChange, onSave, onClose, prefillInvoice }: Se
                         onClick={() => {
                           setSelectedPayType(t.key)
                           setPaymentDraft(d => ({ ...d, name: editingPaymentId ? d.name : t.nameFill, details: editingPaymentId ? d.details : '' }))
-                          setDraftBankDetails(d => editingPaymentId ? d : { ...EMPTY_BANK_DETAILS, ...(t.key === 'wise' ? WISE_PREFILL : {}) })
+                          setDraftBankDetails(d => editingPaymentId ? d : { ...EMPTY_BANK_DETAILS, ...(t.key === 'wise' ? WISE_PREFILL : t.key === 'payoneer' ? PAYONEER_PREFILL : {}) })
                         }}
                         className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
                           selectedPayType === t.key
@@ -630,6 +637,10 @@ export function Settings({ data, onChange, onSave, onClose, prefillInvoice }: Se
                           <div>
                             <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] mb-1.5">Account number</p>
                             <input className={inputCls} value={draftBankDetails.accountNumber} onChange={e => setDraftBankDetails(d => ({ ...d, accountNumber: e.target.value }))} placeholder="e.g. 1234567890" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] mb-1.5">IBAN</p>
+                            <input className={inputCls} value={draftBankDetails.iban ?? ''} onChange={e => setDraftBankDetails(d => ({ ...d, iban: e.target.value }))} placeholder="e.g. LU00 0000 0000 0000 0000" />
                           </div>
                           <div>
                             <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] mb-1.5">Account type</p>

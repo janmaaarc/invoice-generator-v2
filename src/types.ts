@@ -8,6 +8,7 @@ export interface BankDetails {
   accountType?: string;
   routingNumber?: string;
   holderAddress?: string;
+  iban?: string;
 }
 
 export const EMPTY_BANK_DETAILS: BankDetails = {
@@ -19,6 +20,7 @@ export const EMPTY_BANK_DETAILS: BankDetails = {
   accountType: '',
   routingNumber: '',
   holderAddress: '',
+  iban: '',
 };
 
 export interface LineItem {
@@ -407,6 +409,7 @@ export function bankDetailRows(d: BankDetails): [string, string][] {
     ['Bank', d.bankName],
     ['Account Name', d.accountName],
     ['Account No.', d.accountNumber],
+    ['IBAN', d.iban],
     ['Account Type', d.accountType],
     ['Routing No.', d.routingNumber],
     ['SWIFT / BIC', d.swiftCode],
