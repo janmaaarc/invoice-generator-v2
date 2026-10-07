@@ -81,32 +81,6 @@ export function deleteInvoice(data: AppData, invoiceId: string): AppData {
   return newData;
 }
 
-export function duplicateInvoice(data: AppData, invoice: InvoiceData): { data: AppData; newInvoice: InvoiceData } {
-  const now = new Date().toISOString();
-  const nextNumber = data.settings.lastInvoiceNumber + 1;
-
-  const newInvoice: InvoiceData = {
-    ...invoice,
-    id: crypto.randomUUID(),
-    invoiceNumber: `INV-${new Date().getFullYear()}-${String(nextNumber).padStart(3, '0')}`,
-    invoiceDate: now.split('T')[0],
-    status: 'draft',
-    paidDate: undefined,
-    createdAt: now,
-    updatedAt: now,
-    lineItems: invoice.lineItems.map(item => ({ ...item, id: crypto.randomUUID() })),
-  };
-
-  const newData = {
-    ...data,
-    invoices: [...data.invoices, newInvoice],
-    settings: { ...data.settings, lastInvoiceNumber: nextNumber },
-  };
-
-  saveAppData(newData);
-  return { data: newData, newInvoice };
-}
-
 export function saveClient(data: AppData, client: SavedClient): AppData {
   const existingIndex = data.clients.findIndex(c => c.id === client.id);
 
