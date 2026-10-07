@@ -47,6 +47,8 @@ export interface InvoiceData {
   lineItems: LineItem[];
 
   paymentMethod: string;
+  // which saved method was picked, since two saved methods can share a name
+  paymentMethodId?: string;
   paymentDetails: string;
   bankDetails?: BankDetails;
   paymentQrImage?: string;

@@ -564,7 +564,7 @@ export function Settings({ data, onChange, onSave, onClose, prefillInvoice }: Se
                 { key: 'bank',    label: 'Bank Transfer',   isBank: true,  nameFill: 'Bank Transfer',   placeholder: '' },
                 { key: 'swift',   label: 'SWIFT',           isBank: true,  nameFill: 'SWIFT',           placeholder: '' },
                 { key: 'wise',    label: 'Wise',            isBank: true,  nameFill: 'Wise',            placeholder: '' },
-                { key: 'wiselink', label: 'Wise Link',      isBank: false, nameFill: 'Wise',            placeholder: 'https://wise.com/pay/me/...' },
+                { key: 'wiselink', label: 'Wise Link',      isBank: false, nameFill: 'Wise Link',       placeholder: 'https://wise.com/pay/me/...' },
                 { key: 'custom',  label: '+ Custom',        isBank: false, nameFill: '',                placeholder: 'Account, link, or details' },
               ] as const
 

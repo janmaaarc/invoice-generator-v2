@@ -601,12 +601,13 @@ export function InvoiceEditor({
                     onClick={() => onChange({
                       ...invoice,
                       paymentMethod: m.name,
+                      paymentMethodId: m.id,
                       paymentDetails: m.type === 'bank' ? '' : m.details,
                       bankDetails: m.type === 'bank' ? m.bankDetails : undefined,
                       updatedAt: new Date().toISOString()
                     })}
                     className={`px-3 py-1.5 text-xs rounded-full border transition-all ${
-                      invoice.paymentMethod === m.name
+                      (invoice.paymentMethodId ? invoice.paymentMethodId === m.id : invoice.paymentMethod === m.name)
                         ? 'bg-[var(--text)] text-[var(--bg)] border-[var(--text)]'
                         : 'border-[var(--border)] text-[var(--muted)] hover:border-[var(--text)] hover:text-[var(--text)]'
                     }`}
@@ -617,7 +618,7 @@ export function InvoiceEditor({
               </div>
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Input label="Method" value={invoice.paymentMethod} onChange={e => onChange({ ...invoice, paymentMethod: e.target.value, bankDetails: undefined, updatedAt: new Date().toISOString() })} placeholder="PayPal, Bank Transfer…" />
+              <Input label="Method" value={invoice.paymentMethod} onChange={e => onChange({ ...invoice, paymentMethod: e.target.value, paymentMethodId: undefined, bankDetails: undefined, updatedAt: new Date().toISOString() })} placeholder="PayPal, Bank Transfer…" />
               {!hasBankDetails(invoice.bankDetails) && (
                 <Input label="Details" value={invoice.paymentDetails} onChange={e => set('paymentDetails', e.target.value)} placeholder="Account number, email…" />
               )}
