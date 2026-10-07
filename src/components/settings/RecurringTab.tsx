@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Plus, Trash2, ToggleLeft, ToggleRight } from 'lucide-react'
-import { DUE_DATE_PRESETS } from '../../types'
+import { DUE_DATE_PRESETS, hasBankDetails, bankDetailRows } from '../../types'
 import type { InvoiceData, RecurringInvoice, RecurringFrequency, RecurringTemplate } from '../../types'
 import { initialNextDate } from '../../lib/recurring'
 import { inputCls, Row, SectionTitle, type TabProps } from './shared'
@@ -21,7 +21,7 @@ export function RecurringTab({ data, onChange, onSave, prefillInvoice }: TabProp
       fromName: s.defaultFromName, fromEmail: s.defaultFromEmail, fromAddress: s.defaultFromAddress,
       toName: '', toEmail: '', toAddress: '',
       lineItems: [{ id: crypto.randomUUID(), description: '', quantity: 1, rate: 0 }],
-      paymentMethod: s.defaultPaymentMethod, paymentDetails: s.defaultPaymentDetails,
+      paymentMethod: s.defaultPaymentMethod, paymentDetails: s.defaultPaymentDetails, bankDetails: s.defaultBankDetails,
       notes: '', currency: 'USD', dueDatePreset: s.defaultDueDate || 'Upon receipt',
     }
   }
@@ -35,7 +35,7 @@ export function RecurringTab({ data, onChange, onSave, prefillInvoice }: TabProp
       fromName: prefillInvoice.fromName, fromEmail: prefillInvoice.fromEmail, fromAddress: prefillInvoice.fromAddress,
       toName: prefillInvoice.toName, toEmail: prefillInvoice.toEmail, toAddress: prefillInvoice.toAddress,
       lineItems: prefillInvoice.lineItems.map(i => ({ ...i, id: crypto.randomUUID() })),
-      paymentMethod: prefillInvoice.paymentMethod, paymentDetails: prefillInvoice.paymentDetails,
+      paymentMethod: prefillInvoice.paymentMethod, paymentMethodId: prefillInvoice.paymentMethodId, paymentDetails: prefillInvoice.paymentDetails, bankDetails: prefillInvoice.bankDetails,
       notes: prefillInvoice.notes, currency: prefillInvoice.currency,
       dueDatePreset: s.defaultDueDate || 'Upon receipt',
       taxRate: prefillInvoice.taxRate, discountPercent: prefillInvoice.discountPercent,
@@ -53,7 +53,7 @@ export function RecurringTab({ data, onChange, onSave, prefillInvoice }: TabProp
         fromName: prefillInvoice.fromName, fromEmail: prefillInvoice.fromEmail, fromAddress: prefillInvoice.fromAddress,
         toName: prefillInvoice.toName, toEmail: prefillInvoice.toEmail, toAddress: prefillInvoice.toAddress,
         lineItems: prefillInvoice.lineItems.map(i => ({ ...i, id: crypto.randomUUID() })),
-        paymentMethod: prefillInvoice.paymentMethod, paymentDetails: prefillInvoice.paymentDetails,
+        paymentMethod: prefillInvoice.paymentMethod, paymentMethodId: prefillInvoice.paymentMethodId, paymentDetails: prefillInvoice.paymentDetails, bankDetails: prefillInvoice.bankDetails,
         notes: prefillInvoice.notes, currency: prefillInvoice.currency,
         dueDatePreset: defaultDueDate,
         taxRate: prefillInvoice.taxRate, discountPercent: prefillInvoice.discountPercent,
@@ -158,12 +158,46 @@ export function RecurringTab({ data, onChange, onSave, prefillInvoice }: TabProp
           </button>
 
           <p className="text-xs font-medium text-[var(--text)] mt-4 mb-2">Payment</p>
+          {data.paymentMethods.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {data.paymentMethods.map(m => (
+                <button
+                  key={m.id}
+                  onClick={() => setRecurringTemplate(t => ({
+                    ...t,
+                    paymentMethod: m.name,
+                    paymentMethodId: m.id,
+                    paymentDetails: m.type === 'bank' ? '' : m.details,
+                    bankDetails: m.type === 'bank' ? m.bankDetails : undefined,
+                  }))}
+                  className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
+                    (recurringTemplate.paymentMethodId ? recurringTemplate.paymentMethodId === m.id : recurringTemplate.paymentMethod === m.name)
+                      ? 'bg-[var(--text)] text-[var(--bg)] border-[var(--text)]'
+                      : 'border-[var(--border)] text-[var(--muted)] hover:border-[var(--text)] hover:text-[var(--text)]'
+                  }`}
+                >
+                  {m.name}
+                </button>
+              ))}
+            </div>
+          )}
           <Row label="Method">
-            <input className={`${inputCls} max-w-56`} value={recurringTemplate.paymentMethod} onChange={e => setRT('paymentMethod', e.target.value)} placeholder="PayPal, GCash..." />
+            <input className={`${inputCls} max-w-56`} value={recurringTemplate.paymentMethod} onChange={e => setRecurringTemplate(t => ({ ...t, paymentMethod: e.target.value, paymentMethodId: undefined, bankDetails: undefined }))} placeholder="PayPal, GCash..." />
           </Row>
-          <Row label="Details">
-            <input className={`${inputCls} max-w-56`} value={recurringTemplate.paymentDetails} onChange={e => setRT('paymentDetails', e.target.value)} placeholder="Account / link" />
-          </Row>
+          {hasBankDetails(recurringTemplate.bankDetails) ? (
+            <div className="mt-2 rounded-md bg-[var(--surface)] border border-[var(--border)] px-3 py-2.5 space-y-1.5">
+              {bankDetailRows(recurringTemplate.bankDetails).map(([label, value]) => (
+                <div key={label} className="flex gap-3">
+                  <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] w-28 flex-shrink-0 pt-0.5 leading-tight">{label}</span>
+                  <span className="text-xs text-[var(--text)]">{value}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <Row label="Details">
+              <input className={`${inputCls} max-w-56`} value={recurringTemplate.paymentDetails} onChange={e => setRT('paymentDetails', e.target.value)} placeholder="Account / link" />
+            </Row>
+          )}
 
           <div className="flex justify-end gap-2 mt-4">
             <button onClick={() => { setShowRecurringForm(false); setRecurringName(''); setRecurringFreq('monthly'); setRecurringDay(1); setRecurringTemplate(emptyRecurringTemplate()) }} className="px-4 py-1.5 text-sm text-[var(--muted)] hover:text-[var(--text)] transition-colors">Cancel</button>

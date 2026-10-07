@@ -121,7 +121,10 @@ export interface RecurringTemplate {
   toAddress: string;
   lineItems: LineItem[];
   paymentMethod: string;
+  paymentMethodId?: string;
   paymentDetails: string;
+  // carried so generated invoices keep bank rows like IBAN, not just the method name
+  bankDetails?: BankDetails;
   notes: string;
   currency: string;
   dueDatePreset: string;
