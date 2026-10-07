@@ -11,16 +11,20 @@ export function computeNextDate(frequency: RecurringFrequency, dayOfMonth: numbe
       d.setDate(d.getDate() + 14)
       break
     case 'monthly': {
+      // move to the 1st first so Jan 31 + 1 month lands in Feb, not overflowing into Mar
+      d.setDate(1)
       d.setMonth(d.getMonth() + 1)
       d.setDate(Math.min(dayOfMonth, daysInMonth(d.getFullYear(), d.getMonth())))
       break
     }
     case 'quarterly': {
+      d.setDate(1)
       d.setMonth(d.getMonth() + 3)
       d.setDate(Math.min(dayOfMonth, daysInMonth(d.getFullYear(), d.getMonth())))
       break
     }
     case 'yearly': {
+      d.setDate(1)
       d.setFullYear(d.getFullYear() + 1)
       d.setDate(Math.min(dayOfMonth, daysInMonth(d.getFullYear(), d.getMonth())))
       break
