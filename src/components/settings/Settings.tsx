@@ -1,11 +1,11 @@
 import { useRef, useState, useEffect } from 'react'
-import { Upload, X, User, Hash, Palette, Database, Users, RefreshCw, Check, Plus, Pencil, Trash2, CreditCard, Layers, ToggleLeft, ToggleRight, ChevronRight, ChevronLeft } from 'lucide-react'
-import { DEFAULT_SETTINGS, ACCENT_COLORS, DUE_DATE_PRESETS, formatCurrency, hasBankDetails, bankDetailRows, EMPTY_BANK_DETAILS, toLocalDate } from '../../types'
-import type { AppData, InvoiceData, SavedClient, SavedPaymentMethod, SavedLineItem, RecurringInvoice, RecurringFrequency, RecurringTemplate, BankDetails } from '../../types'
+import { Upload, X, User, Hash, Palette, Database, Users, RefreshCw, Check, Plus, Trash2, CreditCard, Layers, ChevronRight, ChevronLeft } from 'lucide-react'
+import { DEFAULT_SETTINGS, ACCENT_COLORS, DUE_DATE_PRESETS, formatCurrency, toLocalDate } from '../../types'
+import type { AppData, InvoiceData, SavedClient, SavedLineItem } from '../../types'
 import { exportDataAsJson, importDataFromJson } from '../../storage'
-import { initialNextDate } from '../../lib/recurring'
-
-const isBankType = (key: string): boolean => key === 'bank' || key === 'swift' || key === 'wise' || key === 'payoneer'
+import { inputCls, Row, SectionTitle } from './shared'
+import { PaymentsTab } from './PaymentsTab'
+import { RecurringTab } from './RecurringTab'
 
 interface SettingsProps {
   data: AppData
@@ -28,24 +28,6 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'data', label: 'Data', icon: Database },
 ]
 
-const inputCls = 'w-full px-3 py-1.5 text-sm bg-[var(--surface)] border border-[var(--border)] rounded-md text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:ring-1 focus:ring-[var(--text)] transition-colors'
-
-function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-start justify-between gap-6 py-4 border-b border-[var(--border)] last:border-0">
-      <div className="min-w-0 flex-shrink-0 w-36">
-        <p className="text-sm text-[var(--text)]">{label}</p>
-        {hint && <p className="text-xs text-[var(--muted)] mt-0.5 leading-snug">{hint}</p>}
-      </div>
-      <div className="flex-1 flex justify-end min-w-0">{children}</div>
-    </div>
-  )
-}
-
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <h3 className="text-base font-semibold text-[var(--text)] mb-1">{children}</h3>
-}
-
 export function Settings({ data, onChange, onSave, onClose, prefillInvoice }: SettingsProps) {
   const s = data.settings
   const fileRef = useRef<HTMLInputElement>(null)
@@ -53,12 +35,7 @@ export function Settings({ data, onChange, onSave, onClose, prefillInvoice }: Se
   const [tab, setTab] = useState<Tab>(prefillInvoice ? 'recurring' : 'profile')
   const [mobileView, setMobileView] = useState<'menu' | 'content'>(prefillInvoice ? 'content' : 'menu')
   const [clientDraft, setClientDraft] = useState<SavedClient>({ id: crypto.randomUUID(), name: '', email: '', address: '' })
-  const [paymentDraft, setPaymentDraft] = useState<SavedPaymentMethod>({ id: crypto.randomUUID(), name: '', details: '', type: 'simple' })
-  const [selectedPayType, setSelectedPayType] = useState<string>('paypal')
-  const [draftBankDetails, setDraftBankDetails] = useState<BankDetails>({ ...EMPTY_BANK_DETAILS })
   const [templateDraft, setTemplateDraft] = useState<SavedLineItem>({ id: crypto.randomUUID(), description: '', rate: 0 })
-  const [expandedPaymentId, setExpandedPaymentId] = useState<string | null>(null)
-  const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null)
 
   useEffect(() => {
     if (prefillInvoice) setTab('recurring')
@@ -76,46 +53,6 @@ export function Settings({ data, onChange, onSave, onClose, prefillInvoice }: Se
     onSave()
   }
 
-  function savePayment() {
-    const isBank = isBankType(selectedPayType)
-    if (!paymentDraft.name.trim()) return
-    if (isBank && !hasBankDetails(draftBankDetails)) return
-    // keep the id when editing so the method stays the same record
-    const id = editingPaymentId ?? crypto.randomUUID()
-    const method: SavedPaymentMethod = isBank
-      ? { id, name: paymentDraft.name, details: '', type: 'bank', bankDetails: { ...draftBankDetails } }
-      : { id, name: paymentDraft.name, details: paymentDraft.details, type: 'simple' }
-    onChange({
-      ...data,
-      paymentMethods: editingPaymentId
-        ? data.paymentMethods.map(m => m.id === editingPaymentId ? method : m)
-        : [...data.paymentMethods, method],
-    })
-    onSave()
-    resetPaymentDraft()
-  }
-
-  function resetPaymentDraft() {
-    setPaymentDraft({ id: crypto.randomUUID(), name: '', details: '', type: 'simple' })
-    setDraftBankDetails({ ...EMPTY_BANK_DETAILS })
-    setEditingPaymentId(null)
-  }
-
-  function startEditPayment(m: SavedPaymentMethod) {
-    setEditingPaymentId(m.id)
-    setSelectedPayType(m.type === 'bank' ? 'bank' : 'custom')
-    setPaymentDraft({ id: m.id, name: m.name, details: m.details, type: m.type ?? 'simple' })
-    // merge over the empty shape so methods saved before newer fields keep controlled inputs
-    setDraftBankDetails({ ...EMPTY_BANK_DETAILS, ...(m.bankDetails ?? {}) })
-    setExpandedPaymentId(null)
-  }
-
-  function removePayment(id: string) {
-    onChange({ ...data, paymentMethods: data.paymentMethods.filter(m => m.id !== id) })
-    onSave()
-    if (editingPaymentId === id) resetPaymentDraft()
-  }
-
   function addTemplate() {
     if (!templateDraft.description.trim()) return
     onChange({ ...data, lineItemTemplates: [...data.lineItemTemplates, templateDraft] })
@@ -129,97 +66,9 @@ export function Settings({ data, onChange, onSave, onClose, prefillInvoice }: Se
   }
   const [importMsg, setImportMsg] = useState<{ ok: boolean; text: string } | null>(null)
 
-  const FREQUENCIES: { value: RecurringFrequency; label: string }[] = [
-    { value: 'weekly', label: 'Weekly' },
-    { value: 'biweekly', label: 'Every 2 weeks' },
-    { value: 'monthly', label: 'Monthly' },
-    { value: 'quarterly', label: 'Quarterly' },
-    { value: 'yearly', label: 'Yearly' },
-  ]
-
-  function emptyRecurringTemplate(): RecurringTemplate {
-    return {
-      fromName: s.defaultFromName, fromEmail: s.defaultFromEmail, fromAddress: s.defaultFromAddress,
-      toName: '', toEmail: '', toAddress: '',
-      lineItems: [{ id: crypto.randomUUID(), description: '', quantity: 1, rate: 0 }],
-      paymentMethod: s.defaultPaymentMethod, paymentDetails: s.defaultPaymentDetails,
-      notes: '', currency: 'USD', dueDatePreset: s.defaultDueDate || 'Upon receipt',
-    }
-  }
-
-  const [showRecurringForm, setShowRecurringForm] = useState(!!prefillInvoice)
-  const [recurringName, setRecurringName] = useState(prefillInvoice?.toName ? `${prefillInvoice.toName} recurring` : '')
-  const [recurringFreq, setRecurringFreq] = useState<RecurringFrequency>('monthly')
-  const [recurringDay, setRecurringDay] = useState(1)
-  const [recurringTemplate, setRecurringTemplate] = useState<RecurringTemplate>(() =>
-    prefillInvoice ? {
-      fromName: prefillInvoice.fromName, fromEmail: prefillInvoice.fromEmail, fromAddress: prefillInvoice.fromAddress,
-      toName: prefillInvoice.toName, toEmail: prefillInvoice.toEmail, toAddress: prefillInvoice.toAddress,
-      lineItems: prefillInvoice.lineItems.map(i => ({ ...i, id: crypto.randomUUID() })),
-      paymentMethod: prefillInvoice.paymentMethod, paymentDetails: prefillInvoice.paymentDetails,
-      notes: prefillInvoice.notes, currency: prefillInvoice.currency,
-      dueDatePreset: s.defaultDueDate || 'Upon receipt',
-      taxRate: prefillInvoice.taxRate, discountPercent: prefillInvoice.discountPercent,
-    } : emptyRecurringTemplate()
-  )
-
-  useEffect(() => {
-    if (prefillInvoice) {
-      setShowRecurringForm(true)
-      setRecurringName(prefillInvoice.toName ? `${prefillInvoice.toName} recurring` : '')
-      setRecurringFreq('monthly')
-      setRecurringDay(1)
-      const defaultDueDate = data.settings.defaultDueDate || 'Upon receipt'
-      setRecurringTemplate({
-        fromName: prefillInvoice.fromName, fromEmail: prefillInvoice.fromEmail, fromAddress: prefillInvoice.fromAddress,
-        toName: prefillInvoice.toName, toEmail: prefillInvoice.toEmail, toAddress: prefillInvoice.toAddress,
-        lineItems: prefillInvoice.lineItems.map(i => ({ ...i, id: crypto.randomUUID() })),
-        paymentMethod: prefillInvoice.paymentMethod, paymentDetails: prefillInvoice.paymentDetails,
-        notes: prefillInvoice.notes, currency: prefillInvoice.currency,
-        dueDatePreset: defaultDueDate,
-        taxRate: prefillInvoice.taxRate, discountPercent: prefillInvoice.discountPercent,
-      })
-    }
-  }, [prefillInvoice, data.settings.defaultDueDate])
-
-  function setRT<K extends keyof RecurringTemplate>(key: K, value: RecurringTemplate[K]) {
-    setRecurringTemplate(t => ({ ...t, [key]: value }))
-  }
-
-  function updateLineItem(idx: number, field: 'description' | 'quantity' | 'rate', value: string | number) {
-    setRecurringTemplate(t => ({ ...t, lineItems: t.lineItems.map((item, i) => i === idx ? { ...item, [field]: value } : item) }))
-  }
-
-  function saveRecurring() {
-    if (!recurringName.trim() || !recurringTemplate.toName.trim()) return
-    const r: RecurringInvoice = {
-      id: crypto.randomUUID(), name: recurringName.trim(), frequency: recurringFreq,
-      dayOfMonth: recurringDay, nextDate: initialNextDate(recurringFreq, recurringDay),
-      enabled: true, template: recurringTemplate, createdAt: new Date().toISOString(),
-    }
-    onChange({ ...data, recurringInvoices: [...data.recurringInvoices, r] })
-    onSave()
-    setShowRecurringForm(false)
-    setRecurringName('')
-    setRecurringFreq('monthly')
-    setRecurringDay(1)
-    setRecurringTemplate(emptyRecurringTemplate())
-  }
-
-  function toggleRecurring(id: string) {
-    onChange({ ...data, recurringInvoices: data.recurringInvoices.map(r => r.id === id ? { ...r, enabled: !r.enabled } : r) })
-    onSave()
-  }
-
-  function deleteRecurring(id: string) {
-    onChange({ ...data, recurringInvoices: data.recurringInvoices.filter(r => r.id !== id) })
-    onSave()
-  }
-
   function set<K extends keyof typeof s>(key: K, value: typeof s[K]) {
     onChange({ ...data, settings: { ...s, [key]: value } })
   }
-
 
   function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -556,209 +405,8 @@ export function Settings({ data, onChange, onSave, onClose, prefillInvoice }: Se
               </>
             )}
 
-            {tab === 'payments' && (() => {
-              const TYPES = [
-                { key: 'paypal',  label: 'PayPal',         isBank: false, nameFill: 'PayPal',         placeholder: 'PayPal email or link' },
-                { key: 'gcash',   label: 'GCash',           isBank: false, nameFill: 'GCash',           placeholder: '+63 9XX XXX XXXX' },
-                { key: 'maya',    label: 'Maya',             isBank: false, nameFill: 'Maya',             placeholder: '+63 9XX XXX XXXX' },
-                { key: 'bank',    label: 'Bank Transfer',   isBank: true,  nameFill: 'Bank Transfer',   placeholder: '' },
-                { key: 'swift',   label: 'SWIFT',           isBank: true,  nameFill: 'SWIFT',           placeholder: '' },
-                { key: 'wise',    label: 'Wise',            isBank: true,  nameFill: 'Wise',            placeholder: '' },
-                { key: 'wiselink', label: 'Wise Link',      isBank: false, nameFill: 'Wise Link',       placeholder: 'https://wise.com/pay/me/...' },
-                { key: 'payoneer', label: 'Payoneer EUR',   isBank: true,  nameFill: 'Payoneer EUR',    placeholder: '' },
-                { key: 'custom',  label: '+ Custom',        isBank: false, nameFill: '',                placeholder: 'Account, link, or details' },
-              ] as const
-
-              // Wise USD accounts always route through this bank, so prefill the constant parts
-              const WISE_PREFILL: Partial<BankDetails> = {
-                bankName: 'Wise US Inc',
-                address: '108 W 13th St, Wilmington, DE, 19801, United States',
-                accountType: 'Checking',
-                swiftCode: 'TRWIUS35XXX',
-              }
-              // Payoneer EUR receiving accounts are held at Banking Circle, so prefill the constant parts
-              const PAYONEER_PREFILL: Partial<BankDetails> = {
-                bankName: 'Banking Circle S.A.',
-                address: '2 Boulevard de la Foire, L-1528 Luxembourg',
-                swiftCode: 'BCIRLULL',
-              }
-              const activeType = TYPES.find(t => t.key === selectedPayType) ?? TYPES[0]
-              const isBank = activeType.isBank
-
-              return (
-                <>
-                  <SectionTitle>Payments</SectionTitle>
-                  <p className="text-xs text-[var(--muted)] mb-5">Add payment methods to quick-pick per invoice.</p>
-
-                  {/* Type selector chips */}
-                  <div className="flex flex-wrap gap-1.5 mb-4">
-                    {TYPES.map(t => (
-                      <button
-                        key={t.key}
-                        onClick={() => {
-                          setSelectedPayType(t.key)
-                          setPaymentDraft(d => ({ ...d, name: editingPaymentId ? d.name : t.nameFill, details: editingPaymentId ? d.details : '' }))
-                          setDraftBankDetails(d => editingPaymentId ? d : { ...EMPTY_BANK_DETAILS, ...(t.key === 'wise' ? WISE_PREFILL : t.key === 'payoneer' ? PAYONEER_PREFILL : {}) })
-                        }}
-                        className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
-                          selectedPayType === t.key
-                            ? 'bg-[var(--text)] text-[var(--bg)] border-[var(--text)]'
-                            : 'text-[var(--muted)] border-[var(--border)] hover:text-[var(--text)] hover:border-[var(--text)]'
-                        }`}
-                      >
-                        {t.label}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Form card */}
-                  <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 mb-6 space-y-3">
-                    <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] mb-1.5">Label</p>
-                      <input
-                        className={inputCls}
-                        value={paymentDraft.name}
-                        onChange={e => setPaymentDraft(d => ({ ...d, name: e.target.value }))}
-                        placeholder={activeType.nameFill || 'e.g. My GCash'}
-                      />
-                    </div>
-
-                    {isBank ? (
-                      <>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] mb-1.5">Bank name</p>
-                            <input className={inputCls} value={draftBankDetails.bankName} onChange={e => setDraftBankDetails(d => ({ ...d, bankName: e.target.value }))} placeholder="e.g. Chase Bank" />
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] mb-1.5">Account name</p>
-                            <input className={inputCls} value={draftBankDetails.accountName} onChange={e => setDraftBankDetails(d => ({ ...d, accountName: e.target.value }))} placeholder="e.g. John Doe" />
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] mb-1.5">Account number</p>
-                            <input className={inputCls} value={draftBankDetails.accountNumber} onChange={e => setDraftBankDetails(d => ({ ...d, accountNumber: e.target.value }))} placeholder="e.g. 1234567890" />
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] mb-1.5">IBAN</p>
-                            <input className={inputCls} value={draftBankDetails.iban ?? ''} onChange={e => setDraftBankDetails(d => ({ ...d, iban: e.target.value }))} placeholder="e.g. LU00 0000 0000 0000 0000" />
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] mb-1.5">Account type</p>
-                            <input className={inputCls} value={draftBankDetails.accountType ?? ''} onChange={e => setDraftBankDetails(d => ({ ...d, accountType: e.target.value }))} placeholder="e.g. Checking" />
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] mb-1.5">Routing number</p>
-                            <input className={inputCls} value={draftBankDetails.routingNumber ?? ''} onChange={e => setDraftBankDetails(d => ({ ...d, routingNumber: e.target.value }))} placeholder="e.g. 101019628" />
-                            <p className="text-[10px] text-[var(--muted)] mt-1">For wire and ACH, when sending from the US</p>
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] mb-1.5">SWIFT / BIC</p>
-                            <input className={inputCls} value={draftBankDetails.swiftCode} onChange={e => setDraftBankDetails(d => ({ ...d, swiftCode: e.target.value }))} placeholder="e.g. TRWIUS35XXX" />
-                            <p className="text-[10px] text-[var(--muted)] mt-1">When sending from outside the US</p>
-                          </div>
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] mb-1.5">Bank address</p>
-                          <input className={inputCls} value={draftBankDetails.address} onChange={e => setDraftBankDetails(d => ({ ...d, address: e.target.value }))} placeholder="e.g. 108 W 13th St, Wilmington, DE, 19801, United States" />
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] mb-1.5">Your address</p>
-                          <input className={inputCls} value={draftBankDetails.holderAddress ?? ''} onChange={e => setDraftBankDetails(d => ({ ...d, holderAddress: e.target.value }))} placeholder="e.g. 123 Main St, Cebu City, 6000, Philippines" />
-                        </div>
-                      </>
-                    ) : (
-                      <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] mb-1.5">Details</p>
-                        <input
-                          className={inputCls}
-                          value={paymentDraft.details}
-                          onChange={e => setPaymentDraft(d => ({ ...d, details: e.target.value }))}
-                          placeholder={activeType.placeholder}
-                          onKeyDown={e => e.key === 'Enter' && savePayment()}
-                        />
-                      </div>
-                    )}
-
-                    <div className="flex justify-end items-center gap-2 pt-1">
-                      {editingPaymentId && (
-                        <button onClick={resetPaymentDraft} className="px-3 py-1.5 text-xs text-[var(--muted)] hover:text-[var(--text)] transition-colors">
-                          Cancel
-                        </button>
-                      )}
-                      <button
-                        onClick={savePayment}
-                        disabled={!paymentDraft.name.trim() || (isBank && !hasBankDetails(draftBankDetails))}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[var(--text)] text-[var(--bg)] rounded-md disabled:opacity-30 hover:opacity-80 transition-opacity"
-                      >
-                        {editingPaymentId ? <><Check size={12} /> Update method</> : <><Plus size={12} /> Save method</>}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Saved list */}
-                  {data.paymentMethods.length > 0 ? (
-                    <div className="space-y-1">
-                      {data.paymentMethods.map(m => {
-                        const isExpanded = expandedPaymentId === m.id
-                        const bd = m.type === 'bank' ? m.bankDetails : null
-                        return (
-                        <div key={m.id} className="rounded-md bg-[var(--surface)] border border-[var(--border)] overflow-hidden">
-                          <div
-                            className="group flex items-center justify-between px-3 py-2.5 cursor-pointer hover:bg-[var(--bg)] transition-colors"
-                            onClick={() => setExpandedPaymentId(isExpanded ? null : m.id)}
-                          >
-                            <div className="min-w-0 flex items-center gap-2.5">
-                              <span className={`flex-shrink-0 text-[9px] font-semibold uppercase tracking-widest px-1.5 py-0.5 rounded ${
-                                m.type === 'bank'
-                                  ? 'bg-blue-500/10 text-blue-500'
-                                  : 'bg-[var(--border)] text-[var(--muted)]'
-                              }`}>
-                                {m.type === 'bank' ? 'Bank' : 'Pay'}
-                              </span>
-                              <span className="text-sm font-medium text-[var(--text)] flex-shrink-0">{m.name}</span>
-                              {!isExpanded && m.details && <span className="text-xs text-[var(--muted)] truncate">{m.details}</span>}
-                              {!isExpanded && bd && hasBankDetails(bd) && (
-                                <span className="text-xs text-[var(--muted)] truncate">{bd.bankName}</span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-1 flex-shrink-0 ml-3">
-                              <button onClick={e => { e.stopPropagation(); startEditPayment(m) }} aria-label={`Edit ${m.name}`} className="opacity-0 group-hover:opacity-100 p-1 text-[var(--muted)] hover:text-[var(--text)] rounded transition-all">
-                                <Pencil size={12} />
-                              </button>
-                              <button onClick={e => { e.stopPropagation(); removePayment(m.id) }} aria-label={`Delete ${m.name}`} className="opacity-0 group-hover:opacity-100 p-1 text-[var(--muted)] hover:text-red-500 rounded transition-all">
-                                <Trash2 size={12} />
-                              </button>
-                              <ChevronRight size={12} className={`text-[var(--muted)] transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
-                            </div>
-                          </div>
-                          {isExpanded && (
-                            <div className="px-3 pb-3 border-t border-[var(--border)] pt-2.5 space-y-1.5">
-                              {bd && hasBankDetails(bd) ? (
-                                <>
-                                  {bankDetailRows(bd).map(([label, value]) => (
-                                    <div key={label} className="flex gap-3">
-                                      <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] w-28 flex-shrink-0 pt-0.5 leading-tight">{label}</span>
-                                      <span className="text-xs text-[var(--text)]">{value}</span>
-                                    </div>
-                                  ))}
-                                </>
-                              ) : (
-                                <p className="text-xs text-[var(--muted)]">{m.details || '—'}</p>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                        )
-                      })}
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center h-14 rounded-md border border-dashed border-[var(--border)]">
-                      <p className="text-[11px] text-[var(--muted)] opacity-50">No methods saved yet</p>
-                    </div>
-                  )}
-                </>
-              )
-            })()}
+            {/* stay mounted so drafts and the one-shot recurring prefill survive tab switches */}
+            <div hidden={tab !== 'payments'}><PaymentsTab data={data} onChange={onChange} onSave={onSave} /></div>
 
             {tab === 'templates' && (
               <>
@@ -798,107 +446,7 @@ export function Settings({ data, onChange, onSave, onClose, prefillInvoice }: Se
               </>
             )}
 
-            {tab === 'recurring' && (
-              <>
-                <SectionTitle>Recurring</SectionTitle>
-                <p className="text-xs text-[var(--muted)] mb-6">Auto-generate invoices on a schedule.</p>
-
-                {!showRecurringForm ? (
-                  <div className="flex justify-end mb-4">
-                    <button onClick={() => setShowRecurringForm(true)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[var(--text)] text-[var(--bg)] rounded-md hover:opacity-80 transition-opacity">
-                      <Plus size={12} /> New schedule
-                    </button>
-                  </div>
-                ) : (
-                  <div className="mb-6 pb-6 border-b border-[var(--border)]">
-                    <Row label="Name">
-                      <input className={`${inputCls} max-w-56`} value={recurringName} onChange={e => setRecurringName(e.target.value)} placeholder="Monthly retainer" />
-                    </Row>
-                    <Row label="Frequency">
-                      <select className={`${inputCls} max-w-40`} value={recurringFreq} onChange={e => setRecurringFreq(e.target.value as RecurringFrequency)}>
-                        {FREQUENCIES.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
-                      </select>
-                    </Row>
-                    {['monthly', 'quarterly', 'yearly'].includes(recurringFreq) && (
-                      <Row label="Day of month" hint="Max 28">
-                        <input type="number" min={1} max={28} className={`${inputCls} max-w-20`} value={recurringDay} onChange={e => setRecurringDay(Number(e.target.value))} />
-                      </Row>
-                    )}
-                    <Row label="Payment terms">
-                      <select className={`${inputCls} max-w-40`} value={recurringTemplate.dueDatePreset} onChange={e => setRT('dueDatePreset', e.target.value)}>
-                        {DUE_DATE_PRESETS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-                      </select>
-                    </Row>
-
-                    <p className="text-xs font-medium text-[var(--text)] mt-4 mb-2">Bill to</p>
-                    <Row label="Client name">
-                      <input className={`${inputCls} max-w-56`} value={recurringTemplate.toName} onChange={e => setRT('toName', e.target.value)} placeholder="Acme Corp *" />
-                    </Row>
-                    <Row label="Client email">
-                      <input type="email" className={`${inputCls} max-w-56`} value={recurringTemplate.toEmail} onChange={e => setRT('toEmail', e.target.value)} placeholder="billing@example.com" />
-                    </Row>
-                    <Row label="Client address">
-                      <input className={`${inputCls} max-w-56`} value={recurringTemplate.toAddress} onChange={e => setRT('toAddress', e.target.value)} placeholder="Street, City, Country" />
-                    </Row>
-
-                    <p className="text-xs font-medium text-[var(--text)] mt-4 mb-2">Line items</p>
-                    {(() => {
-                      const liCls = 'px-3 py-1.5 text-sm bg-[var(--surface)] border border-[var(--border)] rounded-md text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:ring-1 focus:ring-[var(--text)] transition-colors'
-                      return recurringTemplate.lineItems.map((item, idx) => (
-                      <div key={item.id} className="flex items-center gap-2 py-1.5 border-b border-[var(--border)] last:border-0">
-                        <input className={`${liCls} flex-1 min-w-0`} value={item.description} onChange={e => updateLineItem(idx, 'description', e.target.value)} placeholder="Description" />
-                        <input type="number" min={0} className={`${liCls} w-24 flex-shrink-0`} value={item.rate || ''} onChange={e => updateLineItem(idx, 'rate', Number(e.target.value))} placeholder="Rate" />
-                        {recurringTemplate.lineItems.length > 1 && (
-                          <button onClick={() => setRecurringTemplate(t => ({ ...t, lineItems: t.lineItems.filter((_, i) => i !== idx) }))} className="p-1.5 text-[var(--muted)] hover:text-red-500 transition-colors flex-shrink-0">
-                            <Trash2 size={13} />
-                          </button>
-                        )}
-                      </div>
-                    ))
-                    })()}
-                    <button onClick={() => setRecurringTemplate(t => ({ ...t, lineItems: [...t.lineItems, { id: crypto.randomUUID(), description: '', quantity: 1, rate: 0 }] }))} className="flex items-center gap-1.5 text-xs text-[var(--muted)] hover:text-[var(--text)] transition-colors mt-2">
-                      <Plus size={12} /> Add item
-                    </button>
-
-                    <p className="text-xs font-medium text-[var(--text)] mt-4 mb-2">Payment</p>
-                    <Row label="Method">
-                      <input className={`${inputCls} max-w-56`} value={recurringTemplate.paymentMethod} onChange={e => setRT('paymentMethod', e.target.value)} placeholder="PayPal, GCash..." />
-                    </Row>
-                    <Row label="Details">
-                      <input className={`${inputCls} max-w-56`} value={recurringTemplate.paymentDetails} onChange={e => setRT('paymentDetails', e.target.value)} placeholder="Account / link" />
-                    </Row>
-
-                    <div className="flex justify-end gap-2 mt-4">
-                      <button onClick={() => { setShowRecurringForm(false); setRecurringName(''); setRecurringFreq('monthly'); setRecurringDay(1); setRecurringTemplate(emptyRecurringTemplate()) }} className="px-4 py-1.5 text-sm text-[var(--muted)] hover:text-[var(--text)] transition-colors">Cancel</button>
-                      <button onClick={saveRecurring} disabled={!recurringName.trim() || !recurringTemplate.toName.trim()} className="px-4 py-1.5 text-sm font-medium bg-[var(--text)] text-[var(--bg)] rounded-md disabled:opacity-30 hover:opacity-80 transition-opacity">Save</button>
-                    </div>
-                  </div>
-                )}
-
-                {data.recurringInvoices.length > 0 ? (
-                  <div className="space-y-0">
-                    {data.recurringInvoices.map(r => (
-                      <div key={r.id} className={`flex items-center justify-between py-3 border-b border-[var(--border)] last:border-0 ${!r.enabled ? 'opacity-50' : ''}`}>
-                        <div className="min-w-0">
-                          <p className="text-sm text-[var(--text)]">{r.name}</p>
-                          <p className="text-xs text-[var(--muted)] mt-0.5">{FREQUENCIES.find(f => f.value === r.frequency)?.label} · Next: {r.nextDate}</p>
-                        </div>
-                        <div className="flex items-center gap-1 flex-shrink-0 ml-4">
-                          <button onClick={() => toggleRecurring(r.id)} className="p-1.5 text-[var(--muted)] hover:text-[var(--text)] transition-colors" title={r.enabled ? 'Disable' : 'Enable'}>
-                            {r.enabled ? <ToggleRight size={16} className="text-[var(--text)]" /> : <ToggleLeft size={16} />}
-                          </button>
-                          <button onClick={() => deleteRecurring(r.id)} className="p-1.5 text-[var(--muted)] hover:text-red-500 hover:bg-red-500/10 rounded-md transition-colors">
-                            <Trash2 size={13} />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : !showRecurringForm ? (
-                  <p className="text-xs text-[var(--muted)] text-center py-8 opacity-60">No recurring schedules yet</p>
-                ) : null}
-              </>
-            )}
+            <div hidden={tab !== 'recurring'}><RecurringTab data={data} onChange={onChange} onSave={onSave} prefillInvoice={prefillInvoice} /></div>
 
             {tab === 'data' && (
               <>
