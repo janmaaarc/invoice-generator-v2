@@ -1,4 +1,5 @@
 import { forwardRef } from 'react'
+import { QRCodeCanvas } from 'qrcode.react'
 import { formatCurrency, getInvoiceSubtotal, getInvoiceDeposit, CURRENCIES, hasBankDetails, bankDetailRows } from '../../types'
 import type { InvoiceData, AppSettings, BankDetails } from '../../types'
 
@@ -24,6 +25,14 @@ function BankBlock({ method, details, labelColor = '#a1a1aa', valueColor = '#090
       </table>
     </>
   )
+}
+
+// only links make a scannable payment QR; account numbers and phone numbers are not actionable when scanned
+function PaymentQr({ details }: { details: string }) {
+  const url = details.trim()
+  if (!/^https?:\/\/\S+$/i.test(url)) return null
+  // canvas, not SVG, because html2canvas rasterizes canvas reliably in the PDF
+  return <QRCodeCanvas value={url} size={88} marginSize={0} style={{ marginTop: 10, display: 'block' }} />
 }
 
 function TotalsBlock({ invoice, accentColor, totalSize = 24, totalColor, labelColor = '#a1a1aa', rowColor = '#71717a' }: {
@@ -181,6 +190,7 @@ function MinimalPreview({ invoice, settings }: {
                 <>
                   {invoice.paymentMethod && <p style={{ fontSize: 13, fontWeight: 500, margin: '0 0 2px' }}>{invoice.paymentMethod}</p>}
                   {invoice.paymentDetails && <p style={{ fontSize: 12, color: '#71717a', margin: 0 }}>{invoice.paymentDetails}</p>}
+                  {settings.showQrCode && <PaymentQr details={invoice.paymentDetails} />}
                 </>
               )}
             </div>
@@ -314,6 +324,7 @@ function ClassicPreview({ invoice, settings }: {
                 <>
                   {invoice.paymentMethod && <p style={{ fontSize: 13, fontWeight: 600, margin: '0 0 2px' }}>{invoice.paymentMethod}</p>}
                   {invoice.paymentDetails && <p style={{ fontSize: 12, color: '#71717a', margin: 0 }}>{invoice.paymentDetails}</p>}
+                  {settings.showQrCode && <PaymentQr details={invoice.paymentDetails} />}
                 </>
               )}
             </div>
@@ -442,6 +453,7 @@ function ModernPreview({ invoice, settings }: {
                 <>
                   {invoice.paymentMethod && <p style={{ fontSize: 13, fontWeight: 600, margin: '0 0 2px' }}>{invoice.paymentMethod}</p>}
                   {invoice.paymentDetails && <p style={{ fontSize: 12, color: '#71717a', margin: 0 }}>{invoice.paymentDetails}</p>}
+                  {settings.showQrCode && <PaymentQr details={invoice.paymentDetails} />}
                 </>
               )}
             </div>

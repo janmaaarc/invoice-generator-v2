@@ -426,7 +426,7 @@ export function Settings({ data, onChange, onSave, onClose, prefillInvoice }: Se
                   <input className={`${inputCls} max-w-56`} value={s.defaultPaymentDetails} onChange={e => set('defaultPaymentDetails', e.target.value)} placeholder="Account number, link…" onBlur={onSave} />
                 </Row>
 
-                <Row label="QR code" hint="Show QR on invoice">
+                <Row label="QR code" hint="Show QR when payment details are a link">
                   <button
                     onClick={() => set('showQrCode', !s.showQrCode)}
                     className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${s.showQrCode ? 'bg-[var(--text)]' : 'bg-[var(--border)]'}`}
