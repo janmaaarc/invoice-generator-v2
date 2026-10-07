@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { DayPicker } from 'react-day-picker'
 import { ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react'
+import { toLocalDate } from '../../types'
 
 interface DatePickerProps {
   label?: string
@@ -13,13 +14,6 @@ function parseLocal(str: string): Date | undefined {
   const [y, m, d] = str.split('-').map(Number)
   if (!y || !m || !d) return undefined
   return new Date(y, m - 1, d)
-}
-
-function toLocalISO(date: Date): string {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
 }
 
 export function DatePicker({ label, value, onChange }: DatePickerProps) {
@@ -61,7 +55,7 @@ export function DatePicker({ label, value, onChange }: DatePickerProps) {
               selected={selected}
               defaultMonth={selected ?? new Date()}
               onSelect={day => {
-                if (day) { onChange(toLocalISO(day)); setOpen(false) }
+                if (day) { onChange(toLocalDate(day)); setOpen(false) }
               }}
               components={{
                 Chevron: ({ orientation }) =>

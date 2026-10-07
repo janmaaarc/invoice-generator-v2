@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react'
 import { Upload, X, User, Hash, Palette, Database, Users, RefreshCw, Check, Plus, Pencil, Trash2, CreditCard, Layers, ToggleLeft, ToggleRight, ChevronRight, ChevronLeft } from 'lucide-react'
-import { DEFAULT_SETTINGS, ACCENT_COLORS, DUE_DATE_PRESETS, formatCurrency, hasBankDetails, bankDetailRows, EMPTY_BANK_DETAILS } from '../../types'
+import { DEFAULT_SETTINGS, ACCENT_COLORS, DUE_DATE_PRESETS, formatCurrency, hasBankDetails, bankDetailRows, EMPTY_BANK_DETAILS, toLocalDate } from '../../types'
 import type { AppData, InvoiceData, SavedClient, SavedPaymentMethod, SavedLineItem, RecurringInvoice, RecurringFrequency, RecurringTemplate, BankDetails } from '../../types'
 import { exportDataAsJson, importDataFromJson } from '../../storage'
 import { initialNextDate } from '../../lib/recurring'
@@ -243,7 +243,7 @@ export function Settings({ data, onChange, onSave, onClose, prefillInvoice }: Se
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `invoiceberg-backup-${new Date().toISOString().split('T')[0]}.json`
+    a.download = `invoix-backup-${toLocalDate()}.json`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -269,7 +269,7 @@ export function Settings({ data, onChange, onSave, onClose, prefillInvoice }: Se
   const pdfPreview = (s.pdfFilenameTemplate || '{number}-{client}')
     .replace('{number}', 'INV-2026-001')
     .replace('{client}', 'Acme Corp')
-    .replace('{date}', new Date().toISOString().split('T')[0])
+    .replace('{date}', toLocalDate())
 
   const activeTab = TABS.find(t => t.id === tab)!
 

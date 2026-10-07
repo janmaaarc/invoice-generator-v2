@@ -6,7 +6,7 @@ import {
   formatCurrency, getInvoiceTotal, getInvoiceSubtotal, getInvoiceBalance, getInvoiceDeposit,
 } from '../../types'
 import type { InvoiceData, AppData, InvoiceStatus, LineItem } from '../../types'
-import { hasBankDetails, bankDetailRows } from '../../types'
+import { hasBankDetails, bankDetailRows, toLocalDate } from '../../types'
 import { InvoicePreview } from './InvoicePreview'
 
 interface InvoiceEditorProps {
@@ -86,7 +86,7 @@ function ClientNameField({ value, onChange, onSelect, suggestions, inputCls }: {
 function AddPaymentForm({ onAdd }: { onAdd: (amount: number, note: string, date: string) => void }) {
   const [amount, setAmount] = useState('')
   const [note, setNote] = useState('')
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+  const [date, setDate] = useState(toLocalDate())
 
   return (
     <div className="flex gap-2 mt-2 items-end flex-wrap">

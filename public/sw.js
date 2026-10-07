@@ -18,13 +18,15 @@ async function handleRecurringCheck() {
   const resp = await cache.match('/recurring-schedule');
   if (!resp) return;
   const schedules = await resp.json();
-  const today = new Date().toISOString().split('T')[0];
+  // local date, matching the app's toLocalDate, since toISOString() is UTC
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const due = schedules.filter(s => s.nextDate <= today);
   if (due.length === 0) return;
   const names = due.map(s => String(s.name || '').replace(/[^\w\s,.-]/g, '').trim().slice(0, 50)).filter(Boolean).join(', ');
   await self.registration.showNotification('Recurring Invoice Due', {
     body: `${names} - open the app to generate`,
-    icon: '/icon.png',
+    icon: '/logo.png',
     tag: 'recurring-invoice',
     data: { url: '/' },
   });

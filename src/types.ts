@@ -215,7 +215,7 @@ export function createNewInvoice(settings: AppSettings): InvoiceData {
   const nextNumber = settings.lastInvoiceNumber + 1;
   const now = new Date().toISOString();
   const prefix = settings.invoiceNumberPrefix || 'INV';
-  const invoiceDate = now.split('T')[0];
+  const invoiceDate = toLocalDate();
   const dueDate = calculateDueDate(settings.defaultDueDate || 'Upon receipt', invoiceDate);
 
   return {
@@ -254,9 +254,25 @@ export function calculateDueDate(preset: string, fromDate: string): string {
   }
 
   const days = parseInt(preset.replace('net', ''), 10);
-  const date = new Date(fromDate);
+  const date = parseLocalDate(fromDate);
+  // keep the input rather than storing "NaN-NaN-NaN" when an imported date is malformed
+  if (isNaN(date.getTime())) return fromDate;
   date.setDate(date.getDate() + days);
-  return date.toISOString().split('T')[0];
+  return toLocalDate(date);
+}
+
+// local calendar date, since toISOString() is UTC and shifts the day for users east or west of it
+export function toLocalDate(date: Date = new Date()): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+// new Date('YYYY-MM-DD') parses as UTC midnight, so build the date from parts instead
+export function parseLocalDate(str: string): Date {
+  const [y, m, d] = str.split('-').map(Number);
+  return new Date(y, m - 1, d);
 }
 
 export function sanitizeFilename(input: string): string {

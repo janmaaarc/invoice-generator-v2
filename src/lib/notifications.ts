@@ -8,7 +8,7 @@ export async function requestNotificationPermission(): Promise<boolean> {
 
 export function showNotification(title: string, body: string) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return
-  new Notification(title, { body, icon: '/icon.png', tag: 'recurring-invoice' })
+  new Notification(title, { body, icon: '/logo.png', tag: 'recurring-invoice' })
 }
 
 export async function registerServiceWorker() {

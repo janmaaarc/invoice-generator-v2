@@ -1,5 +1,5 @@
 import type { RecurringInvoice, RecurringFrequency, InvoiceData, AppData, AppSettings } from '../types'
-import { calculateDueDate } from '../types'
+import { calculateDueDate, toLocalDate, parseLocalDate } from '../types'
 
 export function computeNextDate(frequency: RecurringFrequency, dayOfMonth: number, from: Date = new Date()): string {
   const d = new Date(from)
@@ -26,7 +26,7 @@ export function computeNextDate(frequency: RecurringFrequency, dayOfMonth: numbe
       break
     }
   }
-  return d.toISOString().split('T')[0]
+  return toLocalDate(d)
 }
 
 function daysInMonth(year: number, month: number): number {
@@ -40,7 +40,7 @@ export function initialNextDate(frequency: RecurringFrequency, dayOfMonth: numbe
   const now = new Date()
   const d = new Date(now.getFullYear(), now.getMonth(), Math.min(dayOfMonth, daysInMonth(now.getFullYear(), now.getMonth())))
   if (d <= now) return computeNextDate(frequency, dayOfMonth, now)
-  return d.toISOString().split('T')[0]
+  return toLocalDate(d)
 }
 
 export function generateInvoiceFromRecurring(
@@ -50,7 +50,7 @@ export function generateInvoiceFromRecurring(
   const nextNumber = settings.lastInvoiceNumber + 1
   const prefix = settings.invoiceNumberPrefix || 'INV'
   const now = new Date().toISOString()
-  const invoiceDate = now.split('T')[0]
+  const invoiceDate = toLocalDate()
 
   return {
     id: crypto.randomUUID(),
@@ -66,7 +66,7 @@ export function generateInvoiceFromRecurring(
 }
 
 export function checkAndGenerateDue(data: AppData): { data: AppData; generated: string[] } {
-  const today = new Date().toISOString().split('T')[0]
+  const today = toLocalDate()
   const generated: string[] = []
   let { settings } = data
   let invoices = [...data.invoices]
@@ -78,7 +78,7 @@ export function checkAndGenerateDue(data: AppData): { data: AppData; generated: 
     generated.push(r.name)
     return {
       ...r,
-      nextDate: computeNextDate(r.frequency, r.dayOfMonth, new Date(r.nextDate)),
+      nextDate: computeNextDate(r.frequency, r.dayOfMonth, parseLocalDate(r.nextDate)),
       lastGeneratedAt: new Date().toISOString(),
     }
   })
