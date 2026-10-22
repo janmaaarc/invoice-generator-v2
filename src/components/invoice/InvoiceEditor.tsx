@@ -3,7 +3,7 @@ import { Download, Share2, Mail, MessageCircle, ChevronDown, ChevronLeft, ListPl
 import { Input, DatePicker } from '../ui'
 import {
   CURRENCIES,
-  formatCurrency, getInvoiceTotal, getInvoiceSubtotal, getInvoiceBalance, getInvoiceDeposit,
+  formatCurrency, getInvoiceTotal, getInvoiceSubtotal, getInvoiceAmountDue,
 } from '../../types'
 import type { InvoiceData, AppData, InvoiceStatus, LineItem } from '../../types'
 import { hasBankDetails, bankDetailRows, toLocalDate } from '../../types'
@@ -203,7 +203,7 @@ export function InvoiceEditor({
 
   const total = getInvoiceTotal(invoice)
   const subtotal = getInvoiceSubtotal(invoice)
-  const deposit = getInvoiceDeposit(invoice)
+  const { paid, dueNow, balanceAfter, show: showDue } = getInvoiceAmountDue(invoice)
   const selectCls = 'px-0 py-1.5 text-sm bg-transparent border-0 border-b border-[var(--border)] text-[var(--text)] focus:outline-none focus:border-[var(--text)] transition-colors'
   const inputCls = 'px-0 py-1.5 text-sm bg-transparent border-0 border-b border-[var(--border)] text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--text)] transition-colors w-full'
 
@@ -569,17 +569,25 @@ export function InvoiceEditor({
                     <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] mb-0.5">Total due</p>
                     <p className="text-3xl font-bold tabular-nums tracking-tight">{formatCurrency(total, invoice.currency)}</p>
                   </div>
-                  {deposit > 0 && (
+                  {showDue && (
                     <div className="pt-2 mt-2 space-y-1">
+                      {paid > 0 && (
+                        <div className="flex justify-between gap-8 text-xs text-[var(--muted)]">
+                          <span>Paid</span>
+                          <span className="tabular-nums">{formatCurrency(paid, invoice.currency)}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between gap-8 text-xs font-medium text-[var(--text)]">
                         <span>Due now</span>
-                        <span className="tabular-nums">{formatCurrency(deposit, invoice.currency)}</span>
+                        <span className="tabular-nums">{formatCurrency(dueNow, invoice.currency)}</span>
                       </div>
-                      <div className="flex justify-between gap-8 text-xs text-[var(--muted)]">
-                        <span>Balance</span>
-                        <span className="tabular-nums">{formatCurrency(total - deposit, invoice.currency)}</span>
-                      </div>
-                      {invoice.depositTerms?.trim() && (
+                      {balanceAfter > 0 && (
+                        <div className="flex justify-between gap-8 text-xs text-[var(--muted)]">
+                          <span>Balance</span>
+                          <span className="tabular-nums">{formatCurrency(balanceAfter, invoice.currency)}</span>
+                        </div>
+                      )}
+                      {balanceAfter > 0 && invoice.depositTerms?.trim() && (
                         <p className="text-[10px] text-[var(--muted)] leading-snug max-w-[180px] ml-auto text-left">{invoice.depositTerms.trim()}</p>
                       )}
                     </div>
@@ -666,7 +674,7 @@ export function InvoiceEditor({
                 </button>
                 {(invoice.payments || []).length > 0 && (
                   <span className="text-xs text-[var(--muted)]">
-                    Outstanding: {formatCurrency(getInvoiceBalance(invoice), invoice.currency)}
+                    Outstanding: {formatCurrency(dueNow + balanceAfter, invoice.currency)}
                   </span>
                 )}
               </div>

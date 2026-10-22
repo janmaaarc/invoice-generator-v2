@@ -1,6 +1,6 @@
 import { forwardRef } from 'react'
 import { QRCodeCanvas } from 'qrcode.react'
-import { formatCurrency, getInvoiceSubtotal, getInvoiceDeposit, CURRENCIES, hasBankDetails, bankDetailRows } from '../../types'
+import { formatCurrency, getInvoiceSubtotal, getInvoiceAmountDue, CURRENCIES, hasBankDetails, bankDetailRows } from '../../types'
 import type { InvoiceData, AppSettings, BankDetails } from '../../types'
 
 function BankBlock({ method, details, labelColor = '#a1a1aa', valueColor = '#09090b' }: {
@@ -48,7 +48,7 @@ function TotalsBlock({ invoice, accentColor, totalSize = 24, totalColor, labelCo
   const afterDiscount = subtotal - discount
   const tax = afterDiscount * ((invoice.taxRate || 0) / 100)
   const total = afterDiscount + tax
-  const deposit = getInvoiceDeposit(invoice)
+  const { paid, dueNow, balanceAfter, show: showDue } = getInvoiceAmountDue(invoice)
   const hasBreakdown = !!(invoice.discountPercent || invoice.taxRate)
   const rowStyle: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', gap: 32, fontSize: 12, marginBottom: 4, color: rowColor }
 
@@ -69,16 +69,23 @@ function TotalsBlock({ invoice, accentColor, totalSize = 24, totalColor, labelCo
       <p style={{ fontSize: totalSize, fontWeight: 700, margin: 0, letterSpacing: '-0.02em', color: totalColor || accentColor || '#09090b' }}>
         {formatCurrency(total, invoice.currency)}
       </p>
-      {deposit > 0 && (
+      {showDue && (
         // capped and right-aligned so long terms wrap under the rows instead of widening the whole block
         <div style={{ marginTop: 12, paddingTop: 10, borderTop: `1px solid ${labelColor}33`, maxWidth: 240, marginLeft: 'auto' }}>
+          {paid > 0 && (
+            <div style={{ ...rowStyle, marginBottom: 0 }}>
+              <span>Paid</span><span style={{ whiteSpace: 'nowrap' }}>{formatCurrency(paid, invoice.currency)}</span>
+            </div>
+          )}
           <div style={{ ...rowStyle, marginBottom: 4, fontWeight: 600, color: totalColor || accentColor || '#09090b' }}>
-            <span>Due now</span><span style={{ whiteSpace: 'nowrap' }}>{formatCurrency(deposit, invoice.currency)}</span>
+            <span>Due now</span><span style={{ whiteSpace: 'nowrap' }}>{formatCurrency(dueNow, invoice.currency)}</span>
           </div>
-          <div style={{ ...rowStyle, marginBottom: 0 }}>
-            <span>Balance</span><span style={{ whiteSpace: 'nowrap' }}>{formatCurrency(total - deposit, invoice.currency)}</span>
-          </div>
-          {invoice.depositTerms?.trim() && (
+          {balanceAfter > 0 && (
+            <div style={{ ...rowStyle, marginBottom: 0 }}>
+              <span>Balance</span><span style={{ whiteSpace: 'nowrap' }}>{formatCurrency(balanceAfter, invoice.currency)}</span>
+            </div>
+          )}
+          {balanceAfter > 0 && invoice.depositTerms?.trim() && (
             <p style={{ fontSize: 10, color: rowColor, margin: '4px 0 0', lineHeight: 1.4, textAlign: 'left' }}>{invoice.depositTerms.trim()}</p>
           )}
         </div>

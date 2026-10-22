@@ -366,11 +366,34 @@ export function getInvoiceDeposit(invoice: InvoiceData): number {
 }
 
 export function getInvoicePaidAmount(invoice: InvoiceData): number {
-  return (invoice.payments || []).reduce((sum, p) => sum + p.amount, 0);
+  // ignore negative amounts, which only arrive through hand-edited imports
+  return (invoice.payments || []).reduce((sum, p) => sum + Math.max(p.amount, 0), 0);
 }
 
 export function getInvoiceBalance(invoice: InvoiceData): number {
-  return getInvoiceTotal(invoice) - getInvoicePaidAmount(invoice);
+  return Math.max(getInvoiceTotal(invoice) - getInvoicePaidAmount(invoice), 0);
+}
+
+export interface AmountDue {
+  paid: number;
+  dueNow: number;
+  balanceAfter: number;
+  show: boolean;
+}
+
+// totals are unrounded float math, so compare in cents to avoid a phantom "Balance $0.00" row
+const toCents = (n: number) => Math.round(n * 100) / 100;
+
+// the deposit field is the amount billed now, separate from payments already received, so total = paid + due now + balance
+export function getInvoiceAmountDue(invoice: InvoiceData): AmountDue {
+  const total = toCents(getInvoiceTotal(invoice));
+  const deposit = toCents(getInvoiceDeposit(invoice));
+  // marking an invoice paid settles it even when no payment was recorded
+  if (invoice.status === 'paid') return { paid: total, dueNow: 0, balanceAfter: 0, show: deposit > 0 || getInvoicePaidAmount(invoice) > 0 };
+  const paid = toCents(Math.min(getInvoicePaidAmount(invoice), total));
+  const remaining = toCents(total - paid);
+  const dueNow = deposit > 0 ? Math.min(deposit, remaining) : remaining;
+  return { paid, dueNow, balanceAfter: toCents(remaining - dueNow), show: paid > 0 || deposit > 0 };
 }
 
 export function buildPdfFilename(invoice: InvoiceData, template?: string): string {
@@ -439,13 +462,13 @@ export function bankDetailRows(d: BankDetails): [string, string][] {
 }
 
 function formatDepositText(invoice: InvoiceData): string {
-  const deposit = getInvoiceDeposit(invoice);
-  if (!deposit) return '';
-  const balance = getInvoiceTotal(invoice) - deposit;
+  const { paid, dueNow, balanceAfter, show } = getInvoiceAmountDue(invoice);
+  if (!show) return '';
   const terms = invoice.depositTerms?.trim();
   return (
-    `Due now: ${formatCurrency(deposit, invoice.currency)}\n` +
-    `Balance: ${formatCurrency(balance, invoice.currency)}${terms ? ` ${terms}` : ''}\n`
+    (paid ? `Paid: ${formatCurrency(paid, invoice.currency)}\n` : '') +
+    `Due now: ${formatCurrency(dueNow, invoice.currency)}\n` +
+    (balanceAfter > 0 ? `Balance: ${formatCurrency(balanceAfter, invoice.currency)}${terms ? ` ${terms}` : ''}\n` : '')
   );
 }
 
