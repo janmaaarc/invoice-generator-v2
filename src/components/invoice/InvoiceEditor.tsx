@@ -112,11 +112,10 @@ function AddPaymentForm({ onAdd }: { onAdd: (amount: number, note: string, date:
       </div>
       <div className="flex flex-col gap-1">
         <label className="text-xs text-[var(--muted)]">Date</label>
-        <input
-          type="date"
+        <DatePicker
           value={date}
-          onChange={e => setDate(e.target.value)}
-          className="px-2 py-1.5 text-sm bg-transparent border border-[var(--border)] rounded-md text-[var(--text)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] w-36"
+          onChange={setDate}
+          buttonClassName="w-36 flex items-center justify-between gap-2 px-2 py-1.5 text-sm bg-transparent border border-[var(--border)] rounded-md text-[var(--text)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
         />
       </div>
       <button

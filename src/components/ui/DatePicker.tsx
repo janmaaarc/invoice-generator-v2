@@ -7,6 +7,7 @@ interface DatePickerProps {
   label?: string
   value: string
   onChange: (value: string) => void
+  buttonClassName?: string
 }
 
 function parseLocal(str: string): Date | undefined {
@@ -16,18 +17,30 @@ function parseLocal(str: string): Date | undefined {
   return new Date(y, m - 1, d)
 }
 
-export function DatePicker({ label, value, onChange }: DatePickerProps) {
+export function DatePicker({ label, value, onChange, buttonClassName }: DatePickerProps) {
   const [open, setOpen] = useState(false)
+  const [openUp, setOpenUp] = useState(false)
+  const [alignRight, setAlignRight] = useState(false)
+  const buttonRef = useRef<HTMLButtonElement>(null)
   const ref = useRef<HTMLDivElement>(null)
   const selected = parseLocal(value)
 
+  // listen only while open, so Escape elsewhere never pulls focus onto a closed picker
   useEffect(() => {
+    if (!open) return
     function onDown(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
     }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') { setOpen(false); buttonRef.current?.focus() }
+    }
     document.addEventListener('mousedown', onDown)
-    return () => document.removeEventListener('mousedown', onDown)
-  }, [])
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
 
   const display = selected
     ? selected.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -38,9 +51,21 @@ export function DatePicker({ label, value, onChange }: DatePickerProps) {
       {label && <label className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)]">{label}</label>}
       <div className="relative">
         <button
+          ref={buttonRef}
           type="button"
-          onClick={() => setOpen(o => !o)}
-          className="w-full flex items-center justify-between px-0 py-1.5 text-sm bg-transparent border-0 border-b border-[var(--border)] text-[var(--text)] hover:border-[var(--muted)] focus:outline-none focus:border-[var(--text)] transition-colors"
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          onClick={() => {
+            // flip to whichever side has room so the calendar is not cut off by the screen or scroll area
+            const rect = buttonRef.current?.getBoundingClientRect()
+            if (rect) {
+              const below = window.innerHeight - rect.bottom
+              setOpenUp(below < 320 && rect.top > below)
+              setAlignRight(rect.left + 260 > window.innerWidth)
+            }
+            setOpen(o => !o)
+          }}
+          className={buttonClassName ?? 'w-full flex items-center justify-between px-0 py-1.5 text-sm bg-transparent border-0 border-b border-[var(--border)] text-[var(--text)] hover:border-[var(--muted)] focus:outline-none focus:border-[var(--text)] transition-colors'}
         >
           <span className={display ? 'text-[var(--text)]' : 'text-[var(--muted)]'}>
             {display || 'Pick a date'}
@@ -49,7 +74,7 @@ export function DatePicker({ label, value, onChange }: DatePickerProps) {
         </button>
 
         {open && (
-          <div className="absolute top-full left-0 mt-1 z-50 bg-[var(--bg)] border border-[var(--border)] rounded-lg shadow-[0_8px_24px_0_rgb(0,0,0,0.12)] p-3 select-none animate-dropdown">
+          <div className={`absolute ${openUp ? 'bottom-full mb-1' : 'top-full mt-1'} ${alignRight ? 'right-0' : 'left-0'} z-50 bg-[var(--bg)] border border-[var(--border)] rounded-lg shadow-[0_8px_24px_0_rgb(0,0,0,0.12)] p-3 select-none animate-dropdown`}>
             <DayPicker
               mode="single"
               selected={selected}
