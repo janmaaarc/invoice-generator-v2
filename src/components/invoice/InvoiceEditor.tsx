@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Download, Share2, Mail, MessageCircle, ChevronDown, ChevronLeft, ListPlus, Trash2, Users } from 'lucide-react'
+import { Download, Share2, Mail, MessageCircle, ChevronDown, ChevronLeft, ListPlus, Trash2, Users, X } from 'lucide-react'
 import { Input, DatePicker } from '../ui'
 import {
   CURRENCIES,
-  formatCurrency, getInvoiceTotal, getInvoiceSubtotal, getInvoiceAmountDue,
+  formatCurrency, getInvoiceTotal, getInvoiceSubtotal, getInvoiceAmountDue, getDueNowLabel,
 } from '../../types'
 import type { InvoiceData, AppData, InvoiceStatus, LineItem } from '../../types'
 import { hasBankDetails, bankDetailRows, toLocalDate } from '../../types'
@@ -519,7 +519,7 @@ export function InvoiceEditor({
                   </div>
                 </div>
                 {/* deposit fields get their own row: three amount controls do not fit the editor column, and a long terms field would otherwise reflow the percentages */}
-                <div className="flex items-center gap-3 min-w-0">
+                <div className="flex flex-wrap items-center gap-3 min-w-0">
                   <div className="flex items-center gap-2">
                     <label className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] whitespace-nowrap">Due now</label>
                     <input
@@ -527,11 +527,30 @@ export function InvoiceEditor({
                       className="w-24 text-sm bg-transparent border-b border-[var(--border)] text-right tabular-nums text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--text)] transition-colors py-0.5"
                       value={invoice.depositAmount || ''}
                       placeholder="0.00"
-                      onChange={e => set('depositAmount', e.target.value === '' ? undefined : Number(e.target.value))}
+                      // clearing the amount also drops its date, so a hidden stale deadline cannot reappear later
+                      onChange={e => !(Number(e.target.value) > 0)
+                        ? onChange({ ...invoice, depositAmount: undefined, depositDueDate: undefined, updatedAt: new Date().toISOString() })
+                        : set('depositAmount', Number(e.target.value))}
                     />
                   </div>
                   {!!invoice.depositAmount && (
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <DatePicker
+                        value={invoice.depositDueDate || ''}
+                        onChange={v => set('depositDueDate', v)}
+                        ariaLabel="Due-now payment date"
+                        buttonClassName="w-32 flex items-center justify-between gap-2 text-sm bg-transparent border-b border-[var(--border)] text-[var(--text)] focus:outline-none focus:border-[var(--text)] transition-colors py-0.5"
+                      />
+                      {invoice.depositDueDate && (
+                        <button type="button" onClick={() => set('depositDueDate', undefined)} aria-label="Clear due-now date" className="p-1.5 -m-1 rounded text-[var(--muted)] hover:text-[var(--text)] focus-visible:outline focus-visible:outline-1 focus-visible:outline-[var(--text)] transition-colors">
+                          <X size={11} />
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {!!invoice.depositAmount && (
+                    <div className="flex items-center gap-2 min-w-[8rem] flex-1">
                       <label className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] whitespace-nowrap">Balance</label>
                       <input
                         className="min-w-0 flex-1 text-sm bg-transparent border-b border-[var(--border)] text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--text)] transition-colors py-0.5"
@@ -577,7 +596,7 @@ export function InvoiceEditor({
                         </div>
                       )}
                       <div className="flex justify-between gap-8 text-xs font-medium text-[var(--text)]">
-                        <span>Due now</span>
+                        <span>{getDueNowLabel(invoice)}</span>
                         <span className="tabular-nums">{formatCurrency(dueNow, invoice.currency)}</span>
                       </div>
                       {balanceAfter > 0 && (

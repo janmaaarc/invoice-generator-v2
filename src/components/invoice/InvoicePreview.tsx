@@ -1,6 +1,6 @@
 import { forwardRef } from 'react'
 import { QRCodeCanvas } from 'qrcode.react'
-import { formatCurrency, getInvoiceSubtotal, getInvoiceAmountDue, CURRENCIES, hasBankDetails, bankDetailRows } from '../../types'
+import { formatCurrency, getInvoiceSubtotal, getInvoiceAmountDue, getDueNowLabel, CURRENCIES, hasBankDetails, bankDetailRows } from '../../types'
 import type { InvoiceData, AppSettings, BankDetails } from '../../types'
 
 function BankBlock({ method, details, labelColor = '#a1a1aa', valueColor = '#09090b' }: {
@@ -78,7 +78,7 @@ function TotalsBlock({ invoice, accentColor, totalSize = 24, totalColor, labelCo
             </div>
           )}
           <div style={{ ...rowStyle, marginBottom: 4, fontWeight: 600, color: totalColor || accentColor || '#09090b' }}>
-            <span>Due now</span><span style={{ whiteSpace: 'nowrap' }}>{formatCurrency(dueNow, invoice.currency)}</span>
+            <span>{getDueNowLabel(invoice)}</span><span style={{ whiteSpace: 'nowrap' }}>{formatCurrency(dueNow, invoice.currency)}</span>
           </div>
           {balanceAfter > 0 && (
             <div style={{ ...rowStyle, marginBottom: 0 }}>

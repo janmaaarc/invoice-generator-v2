@@ -70,6 +70,8 @@ export interface InvoiceData {
   // a prepayment the client still owes, unlike payments[] which is money already received
   depositAmount?: number;
   depositTerms?: string;
+  // YYYY-MM-DD the due-now amount must be paid by, separate from the invoice due date
+  depositDueDate?: string;
 
   // the client's own reference, printed only when they issued one
   poNumber?: string;
@@ -384,6 +386,13 @@ export interface AmountDue {
 // totals are unrounded float math, so compare in cents to avoid a phantom "Balance $0.00" row
 const toCents = (n: number) => Math.round(n * 100) / 100;
 
+// names the due-now line with its own deadline, only while something is still due now
+export function getDueNowLabel(invoice: InvoiceData): string {
+  return invoice.depositDueDate && getInvoiceDeposit(invoice) > 0 && getInvoiceAmountDue(invoice).dueNow > 0
+    ? `Due by ${invoice.depositDueDate}`
+    : 'Due now';
+}
+
 // the deposit field is the amount billed now, separate from payments already received, so total = paid + due now + balance
 export function getInvoiceAmountDue(invoice: InvoiceData): AmountDue {
   const total = toCents(getInvoiceTotal(invoice));
@@ -467,7 +476,7 @@ function formatDepositText(invoice: InvoiceData): string {
   const terms = invoice.depositTerms?.trim();
   return (
     (paid ? `Paid: ${formatCurrency(paid, invoice.currency)}\n` : '') +
-    `Due now: ${formatCurrency(dueNow, invoice.currency)}\n` +
+    `${getDueNowLabel(invoice)}: ${formatCurrency(dueNow, invoice.currency)}\n` +
     (balanceAfter > 0 ? `Balance: ${formatCurrency(balanceAfter, invoice.currency)}${terms ? ` ${terms}` : ''}\n` : '')
   );
 }

@@ -8,6 +8,7 @@ interface DatePickerProps {
   value: string
   onChange: (value: string) => void
   buttonClassName?: string
+  ariaLabel?: string
 }
 
 function parseLocal(str: string): Date | undefined {
@@ -17,7 +18,7 @@ function parseLocal(str: string): Date | undefined {
   return new Date(y, m - 1, d)
 }
 
-export function DatePicker({ label, value, onChange, buttonClassName }: DatePickerProps) {
+export function DatePicker({ label, value, onChange, buttonClassName, ariaLabel }: DatePickerProps) {
   const [open, setOpen] = useState(false)
   const [openUp, setOpenUp] = useState(false)
   const [alignRight, setAlignRight] = useState(false)
@@ -54,6 +55,7 @@ export function DatePicker({ label, value, onChange, buttonClassName }: DatePick
           ref={buttonRef}
           type="button"
           aria-haspopup="dialog"
+          aria-label={ariaLabel}
           aria-expanded={open}
           onClick={() => {
             // flip to whichever side has room so the calendar is not cut off by the screen or scroll area
